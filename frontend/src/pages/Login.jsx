@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function Login() {
@@ -23,37 +23,30 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-900">
       <div className="w-full max-w-sm p-8 bg-slate-800 rounded-xl shadow-lg border border-slate-700">
-        <h2 className="text-3xl font-bold text-center text-emerald-400 mb-8">NPR Finance</h2>
+        <h2 className="text-3xl font-bold text-center text-emerald-400 mb-2">NPR Finance</h2>
+        <p className="text-center text-slate-400 text-sm mb-8">AI-Powered Personal Finance Tracker</p>
         {error && <div className="p-3 mb-4 text-sm text-red-400 bg-red-900/50 rounded-lg">{error}</div>}
-        
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
-            <input 
-              type="text" 
+            <input type="text"
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-100"
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              required
-            />
+              value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-            <input 
-              type="password" 
+            <input type="password"
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-100"
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required
-            />
+              value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
-          <button 
-            type="submit" 
-            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-lg transition-colors"
-          >
+          <button type="submit"
+            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-lg transition-colors">
             Sign In
           </button>
         </form>
+        <p className="text-center text-slate-400 text-sm mt-6">
+          Don't have an account? <Link to="/register" className="text-emerald-400 hover:underline">Register</Link>
+        </p>
       </div>
     </div>
   );

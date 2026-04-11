@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { TrendingUp, AlertTriangle, Wallet } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Wallet, Zap } from 'lucide-react';
 import api from '../api/axios';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +18,8 @@ export default function Dashboard() {
     try {
       const res = await api.get('analytics/summary/');
       setData(res.data);
+      const forecastRes = await api.get('analytics/forecast/');
+      setForecast(forecastRes.data);
     } catch (err) {
       console.error("Failed to load analytics: ", err);
     } finally {
@@ -53,7 +56,7 @@ export default function Dashboard() {
       )}
 
       {/* Top Level Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-2">
           <span className="text-slate-400 font-medium flex items-center gap-2"><TrendingUp size={18}/> Total Expenses</span>
           <span className="text-4xl font-bold text-slate-100">NPR {data?.total_expense.toLocaleString()}</span>
@@ -65,6 +68,14 @@ export default function Dashboard() {
         <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-2">
           <span className="text-slate-400 font-medium">Savings Rate</span>
           <span className="text-4xl font-bold text-blue-400">{data?.savings_rate}%</span>
+        </div>
+        <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 p-6 rounded-2xl border border-fuchsia-500/30 flex flex-col gap-2 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 opacity-20">
+            <Zap size={100} />
+          </div>
+          <span className="text-fuchsia-300 font-medium flex items-center gap-2 relative z-10"><Zap size={18}/> Predicted Next Month</span>
+          <span className="text-4xl font-bold text-fuchsia-100 relative z-10">NPR {forecast?.projected_next_month?.toLocaleString() || '0'}</span>
+          <span className="text-xs text-fuchsia-400/70 relative z-10 mt-1">Based on {forecast?.data_points_used || 0} historic tracking days</span>
         </div>
       </div>
 

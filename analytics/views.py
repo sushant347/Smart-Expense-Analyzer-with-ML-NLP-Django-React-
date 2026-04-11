@@ -5,6 +5,10 @@ from django.db.models import Sum
 from datetime import datetime, timedelta
 import calendar
 from transactions.models import Transaction
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from ml_pipeline.predictor import ExpensePredictor
 
 class AnalyticsSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -63,4 +67,22 @@ class AnalyticsSummaryView(APIView):
             "top_categories": top_categories,
             "bad_habits": bad_habits,
             "daily_trend": daily_trend
+        })
+
+class ExpenseForecastView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Pull ALL historic distinct user transactions
+        history = Transaction.objects.filter(user=request.user, transaction_type='DEBIT').values('date').annotate(total=Sum('amount')).order_by('date')
+        
+        # Format explicitly for Predictor dict requirements
+        daily_expenses = [{'date': h['date'], 'total': float(h['total'])} for h in history]
+
+        predictor = ExpensePredictor()
+        projected = predictor.predict_next_month(daily_expenses)
+
+        return Response({
+            "projected_next_month": projected,
+            "data_points_used": len(daily_expenses)
         })

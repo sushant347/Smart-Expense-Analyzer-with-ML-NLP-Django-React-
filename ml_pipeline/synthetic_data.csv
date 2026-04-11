@@ -1,21 +1,74 @@
 description,category,transaction_type
 "Bhatbhateni Supermarket",Shopping,DEBIT
+"Bhatbhateni Naxal",Shopping,DEBIT
 "Daraz Nepal",Shopping,DEBIT
+"Daraz purchase",Shopping,DEBIT
+"Sasto Deal",Shopping,DEBIT
+"Big Mart",Shopping,DEBIT
 "Pathao Ride",Transport,DEBIT
+"Pathao Food",Food,DEBIT
 "InDrive Fare",Transport,DEBIT
+"Sajha Yatayat",Transport,DEBIT
+"Bus Fare",Transport,DEBIT
+"Taxi",Transport,DEBIT
 "Foodmandu Delivery",Food,DEBIT
+"Bhanchha Ghar",Food,DEBIT
 "KFC Durbar Marg",Food,DEBIT
+"Burger King",Food,DEBIT
+"Pizza Hut",Food,DEBIT
+"Momo Restaurant",Food,DEBIT
+"Cafe",Food,DEBIT
+"Tea Shop",Food,DEBIT
+"Grocery",Food,DEBIT
+"Vegetables",Food,DEBIT
 "eSewa Load",Transfer,CREDIT
+"eSewa Send Money",Transfer,DEBIT
+"eSewa Payment",Transfer,DEBIT
 "IME Pay Wallet",Transfer,CREDIT
+"IME Pay Send",Transfer,DEBIT
 "Khalti Load",Transfer,CREDIT
+"Khalti Payment",Transfer,DEBIT
+"Fonepay",Transfer,DEBIT
+"Bank Transfer",Transfer,DEBIT
 "Electricity Bill NEA",Other,DEBIT
 "WorldLink Internet",Other,DEBIT
+"Vianet Internet",Other,DEBIT
+"CG Net",Other,DEBIT
+"Water Bill",Other,DEBIT
 "Nabil Bank ATM",Other,DEBIT
+"NIC ASIA ATM",Other,DEBIT
 "Salary Credit",Other,CREDIT
-"Movie Hall QFX",Entertainment,DEBIT
-"Netflix Subscription",Entertainment,DEBIT
+"Bonus",Other,CREDIT
+"Freelance Payment",Other,CREDIT
+"Movie QFX",Entertainment,DEBIT
+"Cineplex",Entertainment,DEBIT
+"Netflix",Entertainment,DEBIT
+"Spotify",Entertainment,DEBIT
+"Concert Ticket",Entertainment,DEBIT
+"Game Purchase",Entertainment,DEBIT
 "Hospital Vayodha",Health,DEBIT
-"Pharmacy Medex",Health,DEBIT
-"School Fees Deerwalk",Education,DEBIT
+"Norvic Hospital",Health,DEBIT
+"Pharmacy",Health,DEBIT
+"Medex Pharmacy",Health,DEBIT
+"Doctor Visit",Health,DEBIT
+"Clinic",Health,DEBIT
+"Deerwalk School Fees",Education,DEBIT
 "Udemy Course",Education,DEBIT
-"Rent Payment",Rent,DEBIT
+"Coursera",Education,DEBIT
+"Books",Education,DEBIT
+"Stationery",Education,DEBIT
+"Tuition",Education,DEBIT
+"Room Rent",Rent,DEBIT
+"House Rent",Rent,DEBIT
+"Flat Rent",Rent,DEBIT
+"Apartment Rent",Rent,DEBIT
+"Clothing",Shopping,DEBIT
+"Nike Shoes",Shopping,DEBIT
+"Fashion",Shopping,DEBIT
+"Gym Membership",Health,DEBIT
+"Yoga Class",Health,DEBIT
+"Petrol",Transport,DEBIT
+"Fuel",Transport,DEBIT
+"Mobile Recharge",Other,DEBIT
+"Ncell Recharge",Other,DEBIT
+"NTC Recharge",Other,DEBIT
