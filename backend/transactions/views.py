@@ -10,7 +10,7 @@ from .serializers import TransactionSerializer
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from ml_pipeline.categorizer import TransactionCategorizer
+from ml.categorizer import TransactionCategorizer
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer

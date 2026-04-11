@@ -7,7 +7,7 @@ from datetime import date, timedelta
 import calendar
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from ml_pipeline.predictor import ExpensePredictor
+from ml.predictor import ExpensePredictor
 
 
 def get_months_data(user, months_back=6):

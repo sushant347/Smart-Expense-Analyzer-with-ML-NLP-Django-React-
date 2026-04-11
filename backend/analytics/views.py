@@ -8,7 +8,7 @@ from transactions.models import Transaction
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from ml_pipeline.predictor import ExpensePredictor
+from ml.predictor import ExpensePredictor
 
 class AnalyticsSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
