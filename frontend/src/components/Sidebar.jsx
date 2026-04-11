@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ArrowUpDown, Upload, Zap, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, Upload, Zap, Settings, LogOut, Lightbulb } from 'lucide-react';
 
 const nav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/transactions', icon: ArrowUpDown, label: 'Transactions' },
   { to: '/upload', icon: Upload, label: 'Upload' },
   { to: '/predictions', icon: Zap, label: 'Predictions' },
+  { to: '/suggestions', icon: Lightbulb, label: 'Suggestions' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

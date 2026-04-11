@@ -8,6 +8,7 @@ import Transactions from './pages/Transactions';
 import Upload from './pages/Upload';
 import Predictions from './pages/Predictions';
 import Settings from './pages/Settings';
+import Suggestions from './pages/Suggestions';
 
 const isAuthenticated = () => !!localStorage.getItem('access_token');
 
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/predictions" element={<Predictions />} />
+          <Route path="/suggestions" element={<Suggestions />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
