@@ -7,6 +7,10 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Transaction
 from .serializers import TransactionSerializer
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from ml_pipeline.categorizer import TransactionCategorizer
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
@@ -15,6 +19,36 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Ensure users only see their own transactions
         return Transaction.objects.filter(user=self.request.user).order_by('-date')
+
+    @action(detail=True, methods=['post'])
+    def correct_category(self, request, pk=None):
+        transaction = self.get_object()
+        new_category = request.data.get('category')
+        if not new_category:
+            return Response({"error": "Category is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        transaction.category = new_category
+        transaction.is_manually_corrected = True
+        transaction.save()
+        return Response({"message": f"Successfully updated category to {new_category}."})
+
+class MLRetrainView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.user.id
+        corrected_transactions = Transaction.objects.filter(user=request.user, is_manually_corrected=True)
+        
+        if not corrected_transactions.exists():
+            return Response({"message": "No manually corrected transactions found. Retraining skipped."}, status=status.HTTP_200_OK)
+
+        descriptions = [t.description for t in corrected_transactions]
+        categories = [t.category for t in corrected_transactions]
+
+        categorizer = TransactionCategorizer(user_id=user_id)
+        categorizer.train(descriptions, categories)
+
+        return Response({"message": f"Successfully retrained specific model using {len(descriptions)} corrected rows."}, status=status.HTTP_200_OK)
 
 class CSVUploadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -75,6 +109,14 @@ class CSVUploadView(APIView):
                     # Skip rows that don't match or can't be parsed
                     continue
             
+            # Build categorizer for predictions
+            categorizer = TransactionCategorizer(user_id=request.user.id)
+
+            for t in transactions_to_create:
+                cat, conf = categorizer.predict(t.description)
+                t.category = cat
+                t.confidence_score = conf
+
             # Bulk create to improve insertion speed
             Transaction.objects.bulk_create(transactions_to_create)
             

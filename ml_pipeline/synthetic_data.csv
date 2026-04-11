@@ -1,0 +1,21 @@
+description,category,transaction_type
+"Bhatbhateni Supermarket",Shopping,DEBIT
+"Daraz Nepal",Shopping,DEBIT
+"Pathao Ride",Transport,DEBIT
+"InDrive Fare",Transport,DEBIT
+"Foodmandu Delivery",Food,DEBIT
+"KFC Durbar Marg",Food,DEBIT
+"eSewa Load",Transfer,CREDIT
+"IME Pay Wallet",Transfer,CREDIT
+"Khalti Load",Transfer,CREDIT
+"Electricity Bill NEA",Other,DEBIT
+"WorldLink Internet",Other,DEBIT
+"Nabil Bank ATM",Other,DEBIT
+"Salary Credit",Other,CREDIT
+"Movie Hall QFX",Entertainment,DEBIT
+"Netflix Subscription",Entertainment,DEBIT
+"Hospital Vayodha",Health,DEBIT
+"Pharmacy Medex",Health,DEBIT
+"School Fees Deerwalk",Education,DEBIT
+"Udemy Course",Education,DEBIT
+"Rent Payment",Rent,DEBIT

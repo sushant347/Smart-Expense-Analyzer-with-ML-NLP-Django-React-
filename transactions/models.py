@@ -14,6 +14,8 @@ class Transaction(models.Model):
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
     category = models.CharField(max_length=100, default='Other')
     source = models.CharField(max_length=50, default='MANUAL')
+    confidence_score = models.FloatField(default=1.0)
+    is_manually_corrected = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.date} - {self.description} ({self.amount})"
