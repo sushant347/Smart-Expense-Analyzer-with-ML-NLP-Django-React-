@@ -21,31 +21,31 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-900">
-      <div className="w-full max-w-sm p-8 bg-slate-800 rounded-xl shadow-lg border border-slate-700">
-        <h2 className="text-3xl font-bold text-center text-emerald-400 mb-2">NPR Finance</h2>
-        <p className="text-center text-slate-400 text-sm mb-8">AI-Powered Personal Finance Tracker</p>
-        {error && <div className="p-3 mb-4 text-sm text-red-400 bg-red-900/50 rounded-lg">{error}</div>}
-        <form onSubmit={handleLogin} className="space-y-6">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-lg dark:border-slate-700 dark:bg-slate-900/95">
+        <h2 className="text-center text-3xl font-semibold text-slate-900 dark:text-slate-100">Welcome back</h2>
+        <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-300">Sign in to manage your expenses and monthly reports.</p>
+        {error && <div className="mb-4 mt-6 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300">{error}</div>}
+        <form onSubmit={handleLogin} className="mt-6 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Username</label>
             <input type="text"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
               value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
             <input type="password"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
               value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           <button type="submit"
-            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-lg transition-colors">
+            className="w-full rounded-lg bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-700">
             Sign In
           </button>
         </form>
-        <p className="text-center text-slate-400 text-sm mt-6">
-          Don't have an account? <Link to="/register" className="text-emerald-400 hover:underline">Register</Link>
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
+          No account yet? <Link to="/register" className="font-semibold text-sky-700 hover:underline dark:text-sky-300">Create one</Link>
         </p>
       </div>
     </div>

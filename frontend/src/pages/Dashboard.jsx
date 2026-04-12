@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Link } from 'react-router-dom';
 import { TrendingUp, AlertTriangle, Wallet, Zap } from 'lucide-react';
 import api from '../api/axios';
 
@@ -28,25 +29,30 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading Analytics...</div>;
+    return <div className="flex items-center justify-center py-20 text-slate-600 dark:text-slate-300">Loading dashboard...</div>;
   }
 
+  const categoryData = data?.monthly_category_breakdown || [];
+  const weeklyData = data?.weekly_trends || [];
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <header className="flex justify-between items-center pb-6 border-b border-slate-800">
-        <h1 className="text-3xl font-bold text-slate-100">Analytics Overview</h1>
-        <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors">
-          Upload CSV
-        </button>
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Monthly snapshot of your income, spending, and trends.</p>
+        </div>
+        <Link to="/upload" className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700">
+          Import statement
+        </Link>
       </header>
 
-      {/* Bad Habit Alerts */}
       {data?.bad_habits?.length > 0 && (
-        <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 flex items-start gap-4">
-          <AlertTriangle className="text-red-400 mt-1" size={24} />
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <AlertTriangle className="mt-0.5 text-amber-600 dark:text-amber-300" size={20} />
           <div>
-            <h3 className="text-red-400 font-semibold mb-1">Attention Required</h3>
-            <ul className="text-slate-300 space-y-1">
+            <h3 className="font-semibold text-amber-800 dark:text-amber-200">Spending alert</h3>
+            <ul className="mt-1 space-y-1 text-sm text-amber-700 dark:text-amber-200">
               {data.bad_habits.map((habit, idx) => (
                 <li key={idx}>• {habit}</li>
               ))}
@@ -55,58 +61,60 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Top Level Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-2">
-          <span className="text-slate-400 font-medium flex items-center gap-2"><TrendingUp size={18}/> Total Expenses</span>
-          <span className="text-4xl font-bold text-slate-100">NPR {data?.total_expense.toLocaleString()}</span>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-300"><TrendingUp size={16}/> Total Expenses</div>
+          <div className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">NPR {data?.total_expense?.toLocaleString() || 0}</div>
         </div>
-        <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-2">
-          <span className="text-slate-400 font-medium flex items-center gap-2"><Wallet size={18}/> Total Income</span>
-          <span className="text-4xl font-bold text-emerald-400">NPR {data?.total_income.toLocaleString()}</span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-300"><Wallet size={16}/> Total Income</div>
+          <div className="mt-2 text-3xl font-semibold text-emerald-700 dark:text-emerald-300">NPR {data?.total_income?.toLocaleString() || 0}</div>
         </div>
-        <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-2">
-          <span className="text-slate-400 font-medium">Savings Rate</span>
-          <span className="text-4xl font-bold text-blue-400">{data?.savings_rate}%</span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="text-sm font-medium text-slate-500 dark:text-slate-300">Savings Rate</div>
+          <div className="mt-2 text-3xl font-semibold text-sky-700 dark:text-sky-300">{data?.savings_rate || 0}%</div>
         </div>
-        <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 p-6 rounded-2xl border border-fuchsia-500/30 flex flex-col gap-2 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 opacity-20">
-            <Zap size={100} />
-          </div>
-          <span className="text-fuchsia-300 font-medium flex items-center gap-2 relative z-10"><Zap size={18}/> Predicted Next Month</span>
-          <span className="text-4xl font-bold text-fuchsia-100 relative z-10">NPR {forecast?.projected_next_month?.toLocaleString() || '0'}</span>
-          <span className="text-xs text-fuchsia-400/70 relative z-10 mt-1">Based on {forecast?.data_points_used || 0} historic tracking days</span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-300"><Zap size={16}/> Next Month Forecast</div>
+          <div className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">NPR {forecast?.projected_next_month?.toLocaleString() || 0}</div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Based on {forecast?.data_points_used || 0} historical days</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Pie Chart: Categories */}
-        <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700 h-96">
-          <h3 className="text-xl font-semibold mb-6">Spending by Category</h3>
-          <ResponsiveContainer width="100%" height="80%">
-            <PieChart>
-              <Pie data={data?.monthly_category_breakdown} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={100} label>
-                {data?.monthly_category_breakdown.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px'}} />
-            </PieChart>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:col-span-3">
+          <h3 className="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">Weekly spending trend</h3>
+          <ResponsiveContainer width="100%" height={310}>
+            <BarChart data={weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+              <XAxis dataKey="week_start" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip cursor={{ fill: '#eff6ff' }} contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+              <Bar dataKey="amount" fill="#0ea5e9" radius={[5, 5, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Bar Chart: Daily Trend */}
-        <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700 h-96">
-          <h3 className="text-xl font-semibold mb-6">Weekly Trend</h3>
-          <ResponsiveContainer width="100%" height="80%">
-            <BarChart data={data?.weekly_trends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-              <XAxis dataKey="week_start" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip cursor={{fill: '#334155'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px'}} />
-              <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:col-span-2">
+          <h3 className="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">Category split</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={categoryData} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={80}>
+                {categoryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+            </PieChart>
           </ResponsiveContainer>
+          <div className="mt-4 space-y-2">
+            {categoryData.slice(0, 4).map((item) => (
+              <div key={item.category} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+                <span className="font-medium text-slate-700 dark:text-slate-200">{item.category}</span>
+                <span className="text-slate-600 dark:text-slate-300">NPR {Number(item.total).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

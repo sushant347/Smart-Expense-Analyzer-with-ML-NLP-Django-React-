@@ -14,57 +14,55 @@ export default function Predictions() {
   }, []);
 
   if (loading) return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="h-8 w-48 bg-slate-800 animate-pulse rounded mb-6" />
-      <div className="h-64 bg-slate-800 animate-pulse rounded-2xl" />
+    <div className="space-y-3">
+      <div className="mb-6 h-8 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+      <div className="h-64 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700" />
     </div>
   );
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-100">Expense Predictions</h1>
-        <p className="text-slate-400 text-sm mt-1">AI-powered forecast using your last 6 months of spending data</p>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Predictions</h1>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Projected vs actual spending for your target month.</p>
       </div>
 
       {!data?.predictions?.length ? (
-        <div className="text-center py-16 text-slate-500 bg-slate-800/30 rounded-2xl border border-slate-700">
+        <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <Zap size={40} className="mx-auto mb-3 opacity-30" />
           <p>Not enough data yet.</p>
-          <p className="text-sm mt-1">Upload a few months of transactions to enable predictions.</p>
+          <p className="mt-1 text-sm">Add more transaction history to improve predictions.</p>
         </div>
       ) : (
         <>
-          {/* Total Card */}
-          <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 p-6 rounded-2xl border border-fuchsia-500/30 grid gap-4 md:grid-cols-3">
-            <div>
-              <p className="text-fuchsia-300 font-medium mb-1 flex items-center gap-2"><Zap size={18}/> Predicted Total</p>
-              <p className="text-4xl font-bold text-fuchsia-100">NPR {data.total_projected.toLocaleString()}</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <p className="mb-1 text-sm font-medium text-slate-500 dark:text-slate-300">Predicted Total</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-slate-100">NPR {data.total_projected.toLocaleString()}</p>
             </div>
-            <div>
-              <p className="text-fuchsia-300 font-medium mb-1">Actual Total</p>
-              <p className="text-4xl font-bold text-fuchsia-100">NPR {data.total_actual.toLocaleString()}</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <p className="mb-1 text-sm font-medium text-slate-500 dark:text-slate-300">Actual Total</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-slate-100">NPR {data.total_actual.toLocaleString()}</p>
             </div>
-            <div>
-              <p className="text-fuchsia-300 font-medium mb-1">Gap</p>
-              <p className={`text-4xl font-bold ${data.gap >= 0 ? 'text-amber-300' : 'text-emerald-300'}`}>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <p className="mb-1 text-sm font-medium text-slate-500 dark:text-slate-300">Gap</p>
+              <p className={`text-3xl font-semibold ${data.gap >= 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'}`}>
                 NPR {Math.abs(data.gap).toLocaleString()}
               </p>
             </div>
-            <p className="text-xs text-fuchsia-400/60 md:col-span-3">Target: {data.target_year}-{String(data.target_month).padStart(2, '0')}</p>
           </div>
+          <p className="text-sm text-slate-500 dark:text-slate-300">Target period: {data.target_year}-{String(data.target_month).padStart(2, '0')}</p>
 
-          {/* Per-category bar chart */}
-          <div className="bg-slate-800/40 rounded-2xl border border-slate-700 p-6">
-            <h2 className="text-lg font-semibold text-slate-200 mb-6">Predicted Spending by Category</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h2 className="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">Predicted Spending by Category</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.predictions} margin={{ top: 0, right: 20, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="category" stroke="#94a3b8" angle={-30} textAnchor="end" tick={{ fontSize: 12 }} />
-                <YAxis stroke="#94a3b8" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+                <XAxis dataKey="category" stroke="#64748b" angle={-30} textAnchor="end" tick={{ fontSize: 12 }} />
+                <YAxis stroke="#64748b" />
                 <Tooltip
                   formatter={(v) => [`NPR ${v.toLocaleString()}`, 'Predicted']}
-                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
                 />
                 <Bar dataKey="projected_amount" radius={[6, 6, 0, 0]}>
                   {data.predictions.map((_, idx) => (
@@ -75,11 +73,10 @@ export default function Predictions() {
             </ResponsiveContainer>
           </div>
 
-          {/* Table breakdown */}
-          <div className="bg-slate-800/40 rounded-2xl border border-slate-700 overflow-hidden">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-700 text-slate-400">
+                <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
                   <th className="text-left px-5 py-4">Category</th>
                   <th className="text-right px-5 py-4">Predicted Amount</th>
                   <th className="text-right px-5 py-4">Actual Amount</th>
@@ -88,11 +85,11 @@ export default function Predictions() {
               </thead>
               <tbody>
                 {data.predictions.map((p) => (
-                  <tr key={p.category} className="border-b border-slate-700/50">
-                    <td className="px-5 py-3 text-slate-200">{p.category}</td>
-                    <td className="px-5 py-3 text-right font-medium text-slate-100">NPR {p.projected_amount.toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-slate-300">NPR {p.actual_amount.toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-slate-400">{p.data_points} days</td>
+                  <tr key={p.category} className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="px-5 py-3 text-slate-700 dark:text-slate-200">{p.category}</td>
+                    <td className="px-5 py-3 text-right font-semibold text-slate-900 dark:text-slate-100">NPR {p.projected_amount.toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-300">NPR {p.actual_amount.toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-300">{p.data_points} days</td>
                   </tr>
                 ))}
               </tbody>

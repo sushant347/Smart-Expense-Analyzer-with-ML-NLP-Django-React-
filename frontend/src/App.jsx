@@ -15,7 +15,7 @@ const isAuthenticated = () => !!localStorage.getItem('access_token');
 
 function ProtectedLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
@@ -28,32 +28,34 @@ function ProtectedLayout() {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
 
   return (
-    <div className="flex min-h-screen relative">
+    <div className="relative min-h-screen md:flex">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
       />
-      <main className="flex-1 overflow-auto">
-        <header className="md:hidden sticky top-0 z-20 px-4 py-3 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between backdrop-blur">
+      <main className="min-w-0 flex-1">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/90 md:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg bg-slate-800 text-slate-200"
+            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             aria-label="Open menu"
           >
             <Menu size={18} />
           </button>
-          <span className="text-sm font-semibold text-slate-200">{pageTitle}</span>
+          <span className="text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100">{pageTitle}</span>
           <button
             onClick={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
-            className="p-2 rounded-lg bg-slate-800 text-slate-200"
+            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </header>
-        <Outlet />
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

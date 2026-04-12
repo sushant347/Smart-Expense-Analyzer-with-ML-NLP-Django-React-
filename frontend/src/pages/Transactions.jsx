@@ -43,23 +43,32 @@ export default function Transactions() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {toast && (
-        <div className="fixed top-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg z-50 transition-all">{toast}</div>
+        <div className="fixed right-6 top-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-lg dark:bg-slate-100 dark:text-slate-900">{toast}</div>
       )}
-      <h1 className="text-2xl font-bold text-slate-100 mb-6">Transactions</h1>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Transactions</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Review imported records and correct category labels.</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          {transactions.length} entries
+        </div>
+      </header>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 bg-slate-800 animate-pulse rounded-xl" />
+            <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
           ))}
         </div>
       ) : (
-        <div className="bg-slate-800/40 rounded-2xl border border-slate-700 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700 text-slate-400">
+              <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
                 <th className="text-left px-5 py-4">Date</th>
                 <th className="text-left px-5 py-4">Description</th>
                 <th className="text-left px-5 py-4">Category</th>
@@ -71,43 +80,43 @@ export default function Transactions() {
             <tbody>
               {transactions.map((t) => (
                 <React.Fragment key={t.id}>
-                  <tr className="border-b border-slate-700/50 hover:bg-slate-800/60 transition-colors">
-                    <td className="px-5 py-3 text-slate-300">{t.date}</td>
-                    <td className="px-5 py-3 text-slate-200 max-w-xs truncate">{t.description}</td>
+                  <tr className="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60">
+                    <td className="px-5 py-3 text-slate-700 dark:text-slate-200">{t.date}</td>
+                    <td className="max-w-xs truncate px-5 py-3 text-slate-700 dark:text-slate-200">{t.description}</td>
                     <td className="px-5 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.is_manually_corrected ? 'bg-blue-900/50 text-blue-300' : 'bg-slate-700 text-slate-300'}`}>
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${t.is_manually_corrected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
                         {t.category}
                         {t.is_manually_corrected && ' ✓'}
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`text-xs ${t.confidence_score < 0.5 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      <span className={`text-xs font-medium ${t.is_uncertain ? 'text-amber-600 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
                         {(t.confidence_score * 100).toFixed(0)}%
-                        {t.confidence_score < 0.5 && ' ⚠ uncertain'}
+                        {t.is_uncertain && ' uncertain'}
                       </span>
                     </td>
-                    <td className={`px-5 py-3 text-right font-medium ${t.transaction_type === 'CREDIT' ? 'text-emerald-400' : 'text-slate-100'}`}>
+                    <td className={`px-5 py-3 text-right font-semibold ${t.transaction_type === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-100'}`}>
                       {t.transaction_type === 'CREDIT' ? '+' : '-'}NPR {parseFloat(t.amount).toLocaleString()}
                     </td>
                     <td className="px-5 py-3 text-center">
-                      <button onClick={() => { setEditId(editId === t.id ? null : t.id); setNewCategory(t.category); }} className="text-slate-400 hover:text-emerald-400 transition-colors">
+                      <button onClick={() => { setEditId(editId === t.id ? null : t.id); setNewCategory(t.category); }} className="text-slate-500 transition-colors hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-300">
                         <Tag size={16} />
                       </button>
                     </td>
                   </tr>
                   {editId === t.id && (
-                    <tr className="bg-slate-800/80">
+                    <tr className="bg-slate-50 dark:bg-slate-800/80">
                       <td colSpan={6} className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-400 text-sm">Change category to:</span>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="text-sm text-slate-600 dark:text-slate-300">Change category to:</span>
                           <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)}
-                            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40">
                             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                           </select>
-                          <button onClick={() => correctCategory(t.id)} className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold rounded-lg text-sm transition-colors">
+                          <button onClick={() => correctCategory(t.id)} className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700">
                             Save
                           </button>
-                          <button onClick={() => setEditId(null)} className="text-slate-400 hover:text-slate-200 text-sm">Cancel</button>
+                          <button onClick={() => setEditId(null)} className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">Cancel</button>
                         </div>
                       </td>
                     </tr>
@@ -115,10 +124,11 @@ export default function Transactions() {
                 </React.Fragment>
               ))}
               {transactions.length === 0 && (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-500">No transactions found. Upload a CSV or add manually.</td></tr>
+                <tr><td colSpan={6} className="py-10 text-center text-slate-500 dark:text-slate-300">No transactions found. Upload a CSV or add manual entries.</td></tr>
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

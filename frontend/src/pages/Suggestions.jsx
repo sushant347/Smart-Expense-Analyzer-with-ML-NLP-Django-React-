@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Lightbulb, TrendingDown, Target, Zap, Info, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import api from '../api/axios';
 
 const SIMULATION_CATEGORIES = ['Shopping', 'Entertainment', 'Food', 'Transport', 'Other'];
@@ -46,7 +46,7 @@ export default function Suggestions() {
   }, [loading, runSimulation]);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading Suggestions...</div>;
+    return <div className="flex items-center justify-center py-20 text-slate-600 dark:text-slate-300">Loading suggestions...</div>;
   }
 
   const { budget_actual, budget_recommended, tips } = data;
@@ -61,71 +61,68 @@ export default function Suggestions() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <header className="pb-6 border-b border-slate-800">
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-          <Lightbulb className="text-emerald-400" /> Smart Suggestions
+    <div className="space-y-6">
+      <header>
+        <h1 className="flex items-center gap-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">
+          <Lightbulb className="text-sky-600 dark:text-sky-300" /> Budget Suggestions
         </h1>
-        <p className="text-slate-400 mt-2">Personalized financial advice and budget recommendations based on your habits.</p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Recommendations based on your monthly spend distribution.</p>
       </header>
 
-      {/* Smart Tips */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {tips.map((tip, idx) => (
-          <div key={idx} className={`p-6 rounded-2xl border flex items-start gap-4 ${
-            tip.type === 'warning' ? 'bg-amber-900/10 border-amber-500/30' : 
-            tip.type === 'danger' ? 'bg-red-900/10 border-red-500/30' : 
-            'bg-blue-900/10 border-blue-500/30'
+          <div key={idx} className={`flex items-start gap-3 rounded-xl border p-4 ${
+            tip.type === 'warning' ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20' : 
+            tip.type === 'danger' ? 'border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20' : 
+            'border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-900/20'
           }`}>
-            {tip.type === 'warning' ? <Zap className="text-amber-400 mt-1" size={24} /> : 
-             tip.type === 'danger' ? <AlertCircle className="text-red-400 mt-1" size={24} /> : 
-             <Info className="text-blue-400 mt-1" size={24} />}
-            <p className="text-slate-200">{tip.message}</p>
+            {tip.type === 'warning' ? <Zap className="mt-0.5 text-amber-600 dark:text-amber-300" size={20} /> : 
+             tip.type === 'danger' ? <AlertCircle className="mt-0.5 text-rose-600 dark:text-rose-300" size={20} /> : 
+             <Info className="mt-0.5 text-sky-600 dark:text-sky-300" size={20} />}
+            <p className="text-sm text-slate-700 dark:text-slate-200">{tip.message}</p>
           </div>
         ))}
         {tips.length === 0 && (
-          <div className="col-span-2 p-6 bg-slate-800/30 border border-slate-700 rounded-2xl text-slate-400 text-center italic">
+          <div className="col-span-2 rounded-xl border border-slate-200 bg-white p-6 text-center italic text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             No specific tips at the moment. Keep tracking your expenses to get smarter advice!
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 50/30/20 Budget Recommender */}
-        <div className="bg-slate-800/40 p-8 rounded-2xl border border-slate-700 space-y-6">
-          <h2 className="text-xl font-semibold text-slate-100 italic">50/30/20 Budget Rule</h2>
-          <p className="text-sm text-slate-400">Comparing your actual spending this month with the recommended budget for your income level.</p>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">50 / 30 / 20 Budget Split</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-300">Compare your current month with a recommended split.</p>
           
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
+                <XAxis dataKey="name" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
                 <Legend />
-                <Bar dataKey="Actual" fill="#ec4899" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Recommended" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Actual" fill="#0284c7" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Recommended" fill="#16a34a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Savings Simulation */}
-        <div className="bg-slate-800/40 p-8 rounded-2xl border border-slate-700 space-y-8">
+        <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
-              <Target className="text-blue-400" /> Savings Simulation
+            <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+              <Target className="text-sky-600 dark:text-sky-300" /> Savings Simulation
             </h2>
-            <p className="text-sm text-slate-400">See how reducing non-essential spending ("Wants") speeds up your savings goal.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Estimate savings if you reduce a selected category.</p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-300 text-sm">Category:</span>
+              <span className="text-sm text-slate-700 dark:text-slate-200">Category:</span>
               <select
                 value={simulationCategory}
                 onChange={(e) => setSimulationCategory(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-200"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
               >
                 {SIMULATION_CATEGORIES.map((category) => (
                   <option key={category} value={category}>{category}</option>
@@ -133,35 +130,35 @@ export default function Suggestions() {
               </select>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Reduce selected category by:</span>
-              <span className="text-emerald-400 font-bold">{simulationReduction}%</span>
+              <span className="text-slate-700 dark:text-slate-200">Reduce selected category by:</span>
+              <span className="font-semibold text-sky-700 dark:text-sky-300">{simulationReduction}%</span>
             </div>
             <input 
               type="range" 
               min="0" max="100" 
               value={simulationReduction} 
               onChange={(e) => setSimulationReduction(parseInt(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-300 accent-sky-600 dark:bg-slate-700 dark:accent-sky-400"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-6 pt-4">
-            <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Current Timeline</span>
-              <p className="text-2xl font-bold text-slate-200 mt-1">
-                {monthsToGoalActual === Infinity ? '∞' : monthsToGoalActual.toFixed(1)} <span className="text-sm font-normal text-slate-500">months</span>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300">Current Timeline</span>
+              <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                {monthsToGoalActual === Infinity ? '∞' : monthsToGoalActual.toFixed(1)} <span className="text-sm font-normal text-slate-500 dark:text-slate-300">months</span>
               </p>
             </div>
-            <div className="p-4 bg-emerald-900/10 rounded-xl border border-emerald-500/30">
-              <span className="text-xs text-emerald-500/70 uppercase font-bold tracking-wider">Simulated Timeline</span>
-              <p className="text-2xl font-bold text-emerald-400 mt-1">
-                {monthsToGoalSimulated === Infinity ? '∞' : monthsToGoalSimulated.toFixed(1)} <span className="text-sm font-normal text-emerald-500">months</span>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/20">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Simulated Timeline</span>
+              <p className="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-300">
+                {monthsToGoalSimulated === Infinity ? '∞' : monthsToGoalSimulated.toFixed(1)} <span className="text-sm font-normal text-emerald-600 dark:text-emerald-300">months</span>
               </p>
             </div>
           </div>
 
           {simulationReduction > 0 && monthsToGoalActual !== Infinity && (
-            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-sm text-blue-300 flex items-start gap-3">
+            <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-200">
               <TrendingDown size={20} className="shrink-0" />
               <p>
                 Cutting {simulationCategory} by {simulationReduction}% can save about <strong>NPR {simulation?.monthly_extra_saving?.toLocaleString() || 0}</strong> monthly.
