@@ -27,9 +27,26 @@ export default function Settings() {
   };
 
   const handleDownloadReport = () => {
-    const token = localStorage.getItem('access_token');
     const now = new Date();
-    window.open(`http://localhost:8000/api/reports/export/?year=${now.getFullYear()}&month=${now.getMonth() + 1}`, '_blank');
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+
+    api.get('reports/export/', {
+      params: { year, month },
+      responseType: 'blob',
+    }).then((response) => {
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `finance_report_${year}_${String(month).padStart(2, '0')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    }).catch(() => {
+      setSaved('Failed to download report.');
+      setTimeout(() => setSaved(''), 3000);
+    });
   };
 
   const handleLogout = () => {
