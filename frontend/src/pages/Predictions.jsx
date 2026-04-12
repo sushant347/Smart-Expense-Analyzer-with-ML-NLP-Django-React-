@@ -87,7 +87,7 @@ export default function Predictions() {
                 </tr>
               </thead>
               <tbody>
-                {data.predictions.map((p, i) => (
+                {data.predictions.map((p) => (
                   <tr key={p.category} className="border-b border-slate-700/50">
                     <td className="px-5 py-3 text-slate-200">{p.category}</td>
                     <td className="px-5 py-3 text-right font-medium text-slate-100">NPR {p.projected_amount.toLocaleString()}</td>

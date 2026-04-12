@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Search, Tag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tag } from 'lucide-react';
 
 const CATEGORIES = ['Food', 'Rent', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education', 'Transfer', 'Other'];
 
@@ -32,7 +32,7 @@ export default function Transactions() {
       showToast(`Category updated to ${newCategory}`);
       setEditId(null);
       fetchTransactions();
-    } catch (e) {
+    } catch {
       showToast('Failed to update. Please try again.');
     }
   };

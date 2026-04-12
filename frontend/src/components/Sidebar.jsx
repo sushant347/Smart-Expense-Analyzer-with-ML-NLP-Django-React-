@@ -42,18 +42,21 @@ export default function Sidebar({ isOpen, onClose, theme, onToggleTheme }) {
         <p className="text-xs text-slate-500 mt-0.5">AI-Powered Tracker</p>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                isActive ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`
-            }>
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
+        {nav.map((item) => {
+          const iconElement = React.createElement(item.icon, { size: 18 });
+          return (
+            <NavLink key={item.to} to={item.to}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isActive ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`
+              }>
+              {iconElement}
+              {item.label}
+            </NavLink>
+          );
+        })}
       </nav>
       <div className="px-3 py-4 border-t border-slate-800">
         <button onClick={logout} className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">

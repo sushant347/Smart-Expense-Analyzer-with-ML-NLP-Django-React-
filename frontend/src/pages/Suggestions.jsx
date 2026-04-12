@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Lightbulb, TrendingDown, Target, Zap, Info, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import api from '../api/axios';
@@ -16,12 +16,6 @@ export default function Suggestions() {
     fetchSuggestions();
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      runSimulation();
-    }
-  }, [simulationReduction, simulationCategory]);
-
   const fetchSuggestions = async () => {
     try {
       const res = await api.get('suggestions/');
@@ -33,7 +27,7 @@ export default function Suggestions() {
     }
   };
 
-  const runSimulation = async () => {
+  const runSimulation = useCallback(async () => {
     try {
       const res = await api.post('suggestions/simulate/', {
         category: simulationCategory,
@@ -43,13 +37,19 @@ export default function Suggestions() {
     } catch (err) {
       console.error('Simulation failed', err);
     }
-  };
+  }, [simulationCategory, simulationReduction]);
+
+  useEffect(() => {
+    if (!loading) {
+      runSimulation();
+    }
+  }, [loading, runSimulation]);
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Loading Suggestions...</div>;
   }
 
-  const { budget_actual, budget_recommended, tips, monthly_income, savings_goal } = data;
+  const { budget_actual, budget_recommended, tips } = data;
 
   const monthsToGoalActual = simulation?.months_to_goal_current ?? Infinity;
   const monthsToGoalSimulated = simulation?.months_to_goal_projected ?? Infinity;

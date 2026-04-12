@@ -46,7 +46,7 @@ export default function UploadPage() {
       setManualResult('Transaction added successfully!');
       setManual({ date: new Date().toISOString().split('T')[0], description: '', amount: '', transaction_type: 'DEBIT', category: 'Other', source: 'MANUAL' });
       setTimeout(() => setManualResult(''), 3000);
-    } catch (err) {
+    } catch {
       setManualResult('Failed to add transaction.');
     }
   };
