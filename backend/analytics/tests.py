@@ -25,6 +25,33 @@ class AnalyticsAPITests(APITestCase):
 			[
 				Transaction(
 					user=self.user,
+					date='2026-02-05',
+					description='Room Rent',
+					amount='15000.00',
+					transaction_type='DEBIT',
+					category='Rent',
+					source='MANUAL',
+				),
+				Transaction(
+					user=self.user,
+					date='2026-03-05',
+					description='Room Rent',
+					amount='15000.00',
+					transaction_type='DEBIT',
+					category='Rent',
+					source='MANUAL',
+				),
+				Transaction(
+					user=self.user,
+					date='2026-01-05',
+					description='Room Rent',
+					amount='15000.00',
+					transaction_type='DEBIT',
+					category='Rent',
+					source='MANUAL',
+				),
+				Transaction(
+					user=self.user,
 					date='2026-04-01',
 					description='Groceries',
 					amount='1000.00',
@@ -90,3 +117,17 @@ class AnalyticsAPITests(APITestCase):
 		self.assertEqual(response.data['profile_income'], 10000.0)
 		self.assertEqual(response.data['total_income'], 10000.0)
 		self.assertEqual(response.data['income_mode'], 'profile')
+
+	def test_comparison_endpoint_returns_multi_month_series(self):
+		response = self.client.get(reverse('analytics-comparison'), {'year': 2026, 'month': 4, 'span': 4})
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data['span'], 4)
+		self.assertEqual(len(response.data['series']), 4)
+		self.assertEqual(response.data['series'][-1]['label'], '2026-04')
+
+	def test_recurring_endpoint_detects_repeated_expense(self):
+		response = self.client.get(reverse('analytics-recurring'), {'months': 6, 'min_occurrences': 3})
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertGreaterEqual(response.data['count'], 1)
+		descriptions = [item['description'] for item in response.data['recurring_expenses']]
+		self.assertIn('Room Rent', descriptions)

@@ -11,6 +11,7 @@ class RegisterView(generics.CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_scope = 'login'
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):

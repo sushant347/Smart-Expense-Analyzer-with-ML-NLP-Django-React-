@@ -43,7 +43,7 @@ class ReportsAPITests(APITestCase):
 		response = self.client.get(reverse('report-export'), {'year': 2026, 'month': 4})
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertEqual(response['Content-Type'], 'application/pdf')
-		self.assertIn('attachment; filename="finance_report_2026_04.pdf"', response['Content-Disposition'])
+		self.assertIn('attachment; filename="smart_expense_report_2026_04.pdf"', response['Content-Disposition'])
 		self.assertGreater(len(response.content), 0)
 
 	def test_invalid_month_returns_400(self):

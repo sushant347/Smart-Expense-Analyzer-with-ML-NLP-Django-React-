@@ -91,11 +91,14 @@ def parse_transactions_frame(frame: pd.DataFrame, fallback_source: str | None = 
     else:
         date_idx = _pick(col_map, ['date', 'transaction date'])
         desc_idx = _pick(col_map, ['description', 'remarks', 'particulars', 'detail'])
-        debit_idx = _pick(col_map, ['debit', 'withdrawal'])
+        debit_idx = _pick(col_map, ['debit', 'withdrawal', 'amount', 'npr', 'rs'])
         credit_idx = _pick(col_map, ['credit', 'deposit'])
 
     if date_idx is None and desc_idx is None and debit_idx is None and credit_idx is None:
         raise CSVParserError('Unsupported CSV format: required columns not found.')
+
+    if debit_idx is None and credit_idx is None:
+        raise CSVParserError('Unsupported CSV format: amount/debit/credit column missing.')
 
     parsed_rows: list[dict[str, Any]] = []
 

@@ -84,7 +84,7 @@ class PDFReportView(APIView):
 
         # Title
         title_style = ParagraphStyle('title', parent=styles['Title'], fontSize=20, textColor=colors.HexColor('#10b981'))
-        story.append(Paragraph("NPR Finance — Monthly Report", title_style))
+        story.append(Paragraph("Smart Expense - Monthly Report", title_style))
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph(f"User: {user.username}  |  Period: {start.strftime('%B %Y')}", styles['Normal']))
         story.append(Spacer(1, 0.5 * cm))
@@ -146,5 +146,5 @@ class PDFReportView(APIView):
         buffer.seek(0)
 
         response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="finance_report_{year}_{month:02d}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="smart_expense_report_{year}_{month:02d}.pdf"'
         return response

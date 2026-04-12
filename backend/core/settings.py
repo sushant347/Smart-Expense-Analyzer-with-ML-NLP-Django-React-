@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -172,7 +173,23 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('THROTTLE_ANON', '60/minute'),
+        'user': os.getenv('THROTTLE_USER', '300/minute'),
+        'login': os.getenv('THROTTLE_LOGIN', '10/minute'),
+        'csv_upload': os.getenv('THROTTLE_CSV_UPLOAD', '20/hour'),
+        'retrain': os.getenv('THROTTLE_RETRAIN', '10/hour'),
+        'wallet_sync': os.getenv('THROTTLE_WALLET_SYNC', '10/hour'),
+    },
 }
+
+if 'test' in sys.argv:
+    REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = ()
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),

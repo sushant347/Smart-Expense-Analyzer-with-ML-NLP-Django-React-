@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from transactions.models import Transaction
+from transactions.models import ModelTrainingRun, Transaction
 from transactions.parsers import BANK, ESEWA, KHALTI, detect_csv_source, parse_transactions_frame
 from users.models import CustomUser
 
@@ -115,8 +115,26 @@ class TransactionAPITests(APITestCase):
 
 		filtered = self.client.get(reverse('transaction-list'), {'category': 'Food'})
 		self.assertEqual(filtered.status_code, status.HTTP_200_OK)
-		self.assertEqual(len(filtered.data), 1)
-		self.assertEqual(filtered.data[0]['description'], 'Groceries')
+		self.assertEqual(filtered.data['count'], 1)
+		self.assertEqual(filtered.data['results'][0]['description'], 'Groceries')
+
+	def test_transaction_list_returns_paginated_shape(self):
+		Transaction.objects.create(
+			user=self.user,
+			date='2026-04-10',
+			description='Sample debit',
+			amount='250.00',
+			transaction_type='DEBIT',
+			category='Food',
+			source='MANUAL',
+		)
+
+		response = self.client.get(reverse('transaction-list'))
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertIn('count', response.data)
+		self.assertIn('results', response.data)
+		self.assertEqual(response.data['count'], 1)
+		self.assertEqual(len(response.data['results']), 1)
 
 	def test_reject_invalid_amount(self):
 		response = self.client.post(
@@ -157,8 +175,26 @@ class TransactionAPITests(APITestCase):
 		self.assertEqual(txn.confidence_score, 1.0)
 		self.assertFalse(txn.is_uncertain)
 		self.assertTrue(txn.is_manually_corrected)
+		self.assertIsNotNone(txn.corrected_at)
+		self.assertIn('auto_retrained', response.data)
 
 	def test_retrain_endpoint_with_no_manual_corrections(self):
 		response = self.client.post(reverse('transaction-retrain'), {}, format='json')
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertIn('Retraining skipped', response.data['message'])
+
+	def test_retrain_history_endpoint_returns_runs(self):
+		ModelTrainingRun.objects.create(
+			user=self.user,
+			version=1,
+			trigger_source='MANUAL',
+			corrected_samples=3,
+			training_size=3,
+			model_path='media/models/test.pkl',
+			notes='test run',
+		)
+
+		response = self.client.get(reverse('transaction-retrain-history'))
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data['count'], 1)
+		self.assertEqual(response.data['history'][0]['version'], 1)
