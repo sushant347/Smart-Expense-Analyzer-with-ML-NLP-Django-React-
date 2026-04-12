@@ -3,14 +3,24 @@ import { Lightbulb, TrendingDown, Target, Zap, Info, AlertCircle } from 'lucide-
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import api from '../api/axios';
 
+const SIMULATION_CATEGORIES = ['Shopping', 'Entertainment', 'Food', 'Transport', 'Other'];
+
 export default function Suggestions() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [simulationReduction, setSimulationReduction] = useState(0);
+  const [simulationCategory, setSimulationCategory] = useState('Shopping');
+  const [simulation, setSimulation] = useState(null);
 
   useEffect(() => {
     fetchSuggestions();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      runSimulation();
+    }
+  }, [simulationReduction, simulationCategory]);
 
   const fetchSuggestions = async () => {
     try {
@@ -23,18 +33,26 @@ export default function Suggestions() {
     }
   };
 
+  const runSimulation = async () => {
+    try {
+      const res = await api.post('suggestions/simulate/', {
+        category: simulationCategory,
+        reduce_percent: simulationReduction,
+      });
+      setSimulation(res.data);
+    } catch (err) {
+      console.error('Simulation failed', err);
+    }
+  };
+
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Loading Suggestions...</div>;
   }
 
   const { budget_actual, budget_recommended, tips, monthly_income, savings_goal } = data;
 
-  // Simulation Logic
-  // Assuming the user wants to reduce "Wants" spending
-  const currentMonthlySavings = budget_actual.savings;
-  const simulatedSavings = currentMonthlySavings + (budget_actual.wants * (simulationReduction / 100));
-  const monthsToGoalActual = currentMonthlySavings > 0 ? (savings_goal / currentMonthlySavings) : Infinity;
-  const monthsToGoalSimulated = simulatedSavings > 0 ? (savings_goal / simulatedSavings) : Infinity;
+  const monthsToGoalActual = simulation?.months_to_goal_current ?? Infinity;
+  const monthsToGoalSimulated = simulation?.months_to_goal_projected ?? Infinity;
 
   const chartData = [
     { name: 'Needs', Actual: budget_actual.needs, Recommended: budget_recommended.needs },
@@ -102,8 +120,20 @@ export default function Suggestions() {
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-300 text-sm">Category:</span>
+              <select
+                value={simulationCategory}
+                onChange={(e) => setSimulationCategory(e.target.value)}
+                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-200"
+              >
+                {SIMULATION_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Reduce "Wants" by:</span>
+              <span className="text-slate-300">Reduce selected category by:</span>
               <span className="text-emerald-400 font-bold">{simulationReduction}%</span>
             </div>
             <input 
@@ -133,7 +163,10 @@ export default function Suggestions() {
           {simulationReduction > 0 && monthsToGoalActual !== Infinity && (
             <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-sm text-blue-300 flex items-start gap-3">
               <TrendingDown size={20} className="shrink-0" />
-              <p>By reducing your "Wants" by {simulationReduction}%, you could reach your goal <strong>{(monthsToGoalActual - monthsToGoalSimulated).toFixed(1)} months</strong> sooner!</p>
+              <p>
+                Cutting {simulationCategory} by {simulationReduction}% can save about <strong>NPR {simulation?.monthly_extra_saving?.toLocaleString() || 0}</strong> monthly.
+                Goal timeline improves by <strong>{(monthsToGoalActual - monthsToGoalSimulated).toFixed(1)} months</strong>.
+              </p>
             </div>
           )}
         </div>
