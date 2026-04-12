@@ -80,3 +80,13 @@ class AnalyticsAPITests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertIn('projected_next_month', response.data)
 		self.assertIn('data_points_used', response.data)
+
+	def test_summary_falls_back_to_profile_income_when_no_credit_rows(self):
+		Transaction.objects.filter(user=self.user, transaction_type='CREDIT').delete()
+
+		response = self.client.get(reverse('analytics-summary'), {'year': 2026, 'month': 4})
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data['recorded_income'], 0.0)
+		self.assertEqual(response.data['profile_income'], 10000.0)
+		self.assertEqual(response.data['total_income'], 10000.0)
+		self.assertEqual(response.data['income_mode'], 'profile')

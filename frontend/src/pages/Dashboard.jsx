@@ -69,6 +69,9 @@ export default function Dashboard() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-300"><Wallet size={16}/> Total Income</div>
           <div className="mt-2 text-3xl font-semibold text-emerald-700 dark:text-emerald-300">NPR {data?.total_income?.toLocaleString() || 0}</div>
+          {data?.income_mode === 'profile' && (
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Using profile monthly income</div>
+          )}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="text-sm font-medium text-slate-500 dark:text-slate-300">Savings Rate</div>

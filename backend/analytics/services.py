@@ -33,8 +33,20 @@ def build_analytics_summary(user, year: int, month: int) -> dict:
     credit_txns = month_txns.filter(transaction_type='CREDIT')
 
     total_expense = float(debit_txns.aggregate(total=Sum('amount'))['total'] or 0)
-    total_income = float(credit_txns.aggregate(total=Sum('amount'))['total'] or 0)
-    base_income = float(user.monthly_income or total_income or 0)
+    recorded_income = float(credit_txns.aggregate(total=Sum('amount'))['total'] or 0)
+    profile_income = float(user.monthly_income or 0)
+
+    if recorded_income > 0:
+        total_income = recorded_income
+        income_mode = 'transactions'
+    elif profile_income > 0:
+        total_income = profile_income
+        income_mode = 'profile'
+    else:
+        total_income = 0.0
+        income_mode = 'none'
+
+    base_income = total_income
 
     category_breakdown_qs = (
         debit_txns.values('category').annotate(total=Sum('amount')).order_by('-total')
@@ -78,6 +90,9 @@ def build_analytics_summary(user, year: int, month: int) -> dict:
         'month': month,
         'total_expense': total_expense,
         'total_income': total_income,
+        'recorded_income': recorded_income,
+        'profile_income': profile_income,
+        'income_mode': income_mode,
         'savings_rate': savings_rate,
         'monthly_category_breakdown': monthly_category_breakdown,
         'top_categories': monthly_category_breakdown[:5],
