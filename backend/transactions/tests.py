@@ -133,3 +133,32 @@ class TransactionAPITests(APITestCase):
 		)
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertIn('amount', response.data)
+
+	def test_category_correction_marks_transaction_as_confident(self):
+		txn = Transaction.objects.create(
+			user=self.user,
+			date='2026-04-10',
+			description='Unknown charge',
+			amount='900.00',
+			transaction_type='DEBIT',
+			category='Other',
+			confidence_score=0.22,
+			is_uncertain=True,
+			source='CSV_BANK',
+		)
+		response = self.client.post(
+			reverse('transaction-correct-category', kwargs={'pk': txn.id}),
+			{'category': 'Food'},
+			format='json',
+		)
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		txn.refresh_from_db()
+		self.assertEqual(txn.category, 'Food')
+		self.assertEqual(txn.confidence_score, 1.0)
+		self.assertFalse(txn.is_uncertain)
+		self.assertTrue(txn.is_manually_corrected)
+
+	def test_retrain_endpoint_with_no_manual_corrections(self):
+		response = self.client.post(reverse('transaction-retrain'), {}, format='json')
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertIn('Retraining skipped', response.data['message'])
