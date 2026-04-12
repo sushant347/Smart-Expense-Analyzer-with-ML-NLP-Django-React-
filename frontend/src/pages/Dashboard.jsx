@@ -85,8 +85,8 @@ export default function Dashboard() {
           <h3 className="text-xl font-semibold mb-6">Spending by Category</h3>
           <ResponsiveContainer width="100%" height="80%">
             <PieChart>
-              <Pie data={data?.category_breakdown} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={100} label>
-                {data?.category_breakdown.map((entry, index) => (
+              <Pie data={data?.monthly_category_breakdown} dataKey="total" nameKey="category" cx="50%" cy="50%" outerRadius={100} label>
+                {data?.monthly_category_breakdown.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -97,11 +97,11 @@ export default function Dashboard() {
 
         {/* Bar Chart: Daily Trend */}
         <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700 h-96">
-          <h3 className="text-xl font-semibold mb-6">Daily Trend</h3>
+          <h3 className="text-xl font-semibold mb-6">Weekly Trend</h3>
           <ResponsiveContainer width="100%" height="80%">
-            <BarChart data={data?.daily_trend}>
+            <BarChart data={data?.weekly_trends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-              <XAxis dataKey="date" stroke="#94a3b8" />
+              <XAxis dataKey="week_start" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip cursor={{fill: '#334155'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px'}} />
               <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
