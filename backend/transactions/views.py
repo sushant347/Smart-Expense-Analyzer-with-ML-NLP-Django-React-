@@ -22,6 +22,18 @@ class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def perform_create(self, serializer):
+        transaction = serializer.save()
+
+        # If caller didn't provide a category, infer one from ML.
+        if not self.request.data.get('category'):
+            categorizer = TransactionCategorizer(user_id=self.request.user.id)
+            category, confidence = categorizer.predict(transaction.description)
+            transaction.category = category
+            transaction.confidence_score = confidence
+            transaction.is_uncertain = confidence < categorizer.uncertain_threshold
+            transaction.save(update_fields=['category', 'confidence_score', 'is_uncertain'])
+
     def get_queryset(self):
         # Ensure users only see their own transactions
         queryset = Transaction.objects.filter(user=self.request.user)
@@ -64,8 +76,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
             )
         
         transaction.category = new_category
+        transaction.confidence_score = 1.0
+        transaction.is_uncertain = False
         transaction.is_manually_corrected = True
-        transaction.save()
+        transaction.save(update_fields=['category', 'confidence_score', 'is_uncertain', 'is_manually_corrected'])
         return Response({"message": f"Successfully updated category to {new_category}."})
 
 class MLRetrainView(APIView):
@@ -126,6 +140,7 @@ class CSVUploadView(APIView):
                 cat, conf = categorizer.predict(t.description)
                 t.category = cat
                 t.confidence_score = conf
+                t.is_uncertain = conf < categorizer.uncertain_threshold
 
             # Bulk create to improve insertion speed
             Transaction.objects.bulk_create(transactions_to_create)

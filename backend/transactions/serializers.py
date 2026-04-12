@@ -30,9 +30,10 @@ class TransactionSerializer(serializers.ModelSerializer):
             'category',
             'source',
             'confidence_score',
+            'is_uncertain',
             'is_manually_corrected',
         ]
-        read_only_fields = ['id', 'user', 'confidence_score', 'is_manually_corrected']
+        read_only_fields = ['id', 'user', 'confidence_score', 'is_uncertain', 'is_manually_corrected']
 
     def validate_amount(self, value):
         if value <= 0:
