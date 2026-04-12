@@ -36,10 +36,22 @@ export default function Predictions() {
       ) : (
         <>
           {/* Total Card */}
-          <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 p-6 rounded-2xl border border-fuchsia-500/30">
-            <p className="text-fuchsia-300 font-medium mb-1 flex items-center gap-2"><Zap size={18}/> Total Predicted Next Month</p>
-            <p className="text-5xl font-bold text-fuchsia-100">NPR {data.total_projected.toLocaleString()}</p>
-            <p className="text-xs text-fuchsia-400/60 mt-2">Based on {data.months_of_data} months of history</p>
+          <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 p-6 rounded-2xl border border-fuchsia-500/30 grid gap-4 md:grid-cols-3">
+            <div>
+              <p className="text-fuchsia-300 font-medium mb-1 flex items-center gap-2"><Zap size={18}/> Predicted Total</p>
+              <p className="text-4xl font-bold text-fuchsia-100">NPR {data.total_projected.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-fuchsia-300 font-medium mb-1">Actual Total</p>
+              <p className="text-4xl font-bold text-fuchsia-100">NPR {data.total_actual.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-fuchsia-300 font-medium mb-1">Gap</p>
+              <p className={`text-4xl font-bold ${data.gap >= 0 ? 'text-amber-300' : 'text-emerald-300'}`}>
+                NPR {Math.abs(data.gap).toLocaleString()}
+              </p>
+            </div>
+            <p className="text-xs text-fuchsia-400/60 md:col-span-3">Target: {data.target_year}-{String(data.target_month).padStart(2, '0')}</p>
           </div>
 
           {/* Per-category bar chart */}
@@ -70,6 +82,7 @@ export default function Predictions() {
                 <tr className="border-b border-slate-700 text-slate-400">
                   <th className="text-left px-5 py-4">Category</th>
                   <th className="text-right px-5 py-4">Predicted Amount</th>
+                  <th className="text-right px-5 py-4">Actual Amount</th>
                   <th className="text-right px-5 py-4">Data Points</th>
                 </tr>
               </thead>
@@ -78,6 +91,7 @@ export default function Predictions() {
                   <tr key={p.category} className="border-b border-slate-700/50">
                     <td className="px-5 py-3 text-slate-200">{p.category}</td>
                     <td className="px-5 py-3 text-right font-medium text-slate-100">NPR {p.projected_amount.toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right text-slate-300">NPR {p.actual_amount.toLocaleString()}</td>
                     <td className="px-5 py-3 text-right text-slate-400">{p.data_points} days</td>
                   </tr>
                 ))}
