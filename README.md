@@ -1,62 +1,125 @@
-# 💰 AI-Powered NPR Finance Analyzer
+# Smart Expense Analyzer (Nepal)
 
-A full-stack personal finance analyzer tailored for the Nepali market, featuring automated categorization, ML-based forecasting, and smart budgeting suggestions.
+Full-stack personal finance tracker with categorization, forecasting, budgeting suggestions, and PDF reporting.
 
-## 🚀 Features
+## Core Features
 
-- **📥 Data Input**: Support for eSewa, Khalti, and standard bank CSV exports. Includes a manual expense entry form.
-- **🤖 AI Categorization**: NLP-based (TF-IDF + Logistic Regression) transaction labeling into categories like Food, Rent, Transport, etc.
-- **📊 Analytics Dashboard**: Comprehensive breakdown of monthly spending, savings rate calculator, and "bad habit" detection.
-- **🔮 ML Forecasting**: Predictive modeling (Linear Regression) to forecast next month's spending based on historical trends.
-- **💡 Smart Suggestions**: Personal advice based on the 50/30/20 rule and interactive savings simulations.
-- **📄 Reports**: Export professional monthly financial reports in PDF format.
-- **👤 User System**: Secure JWT-based authentication with per-user data isolation.
+- CSV import with source detection (Bank, eSewa, Khalti)
+- Manual transaction entry
+- Transaction categorization with confidence and uncertain flag
+- Monthly analytics and weekly trends
+- Next-month spending prediction
+- Savings suggestions and budget simulation
+- JWT authentication and per-user data isolation
+- Monthly PDF report export
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Backend**: Django REST Framework, PostgreSQL
-- **Frontend**: React, Tailwind CSS, Recharts, Lucide Icons
-- **Machine Learning**: Scikit-learn, Pandas, NumPy
-- **Reporting**: ReportLab
+- Backend: Django, Django REST Framework, Simple JWT
+- Database: PostgreSQL (production), SQLite fallback (local development)
+- Frontend: React (Vite), Tailwind CSS, Recharts
+- ML: scikit-learn, pandas, numpy
+- Reporting: reportlab
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 expense/
-├── backend/            # Django Application
-│   ├── core/           # Project settings & URLs
-│   ├── users/          # Auth & user profiles
-│   ├── transactions/   # Data parsing & management
-│   ├── analytics/      # Aggregation & summary logic
-│   ├── suggestions/    # Smart advice engine
-│   ├── ...             # Other Django apps
-│   ├── manage.py       # Django cli
-│   └── venv/           # Python environment
-├── frontend/           # React Application (Vite)
-├── ml/                 # Machine Learning Models & Data
-│   ├── categorizer.py  # NLP classifier
-│   ├── predictor.py    # Regression forecaster
-│   └── ...
+├── backend/
+│   ├── core/
+│   ├── users/
+│   ├── transactions/
+│   ├── analytics/
+│   ├── predictions/
+│   ├── suggestions/
+│   ├── reports/
+│   ├── manage.py
+│   └── requirements.txt
+├── frontend/
+├── ml/
 └── README.md
 ```
 
-## ⚙️ Installation & Setup
+## Local Setup
 
-### Backend
-1. Clone the repository.
-2. Navigate to `backend/`.
-3. Activate the virtual environment: `.\venv\Scripts\activate` (Windows).
-4. Install dependencies: `pip install -r requirements.txt`.
-5. Run migrations: `python manage.py migrate`.
-6. Start the server: `python manage.py runserver`.
+### 1. Backend
 
-### Frontend
-1. Navigate to `frontend/`.
-2. Install dependencies: `npm install`.
-3. Start the dev server: `npm run dev`.
+```bash
+cd backend
+python -m venv venv
+# Windows
+venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
-## 🧠 ML Note
-The categorization model uses **Active Learning**. When you manually correct a category in the Transactions list, you can trigger a retraining process to personalize the model to your specific spending habits.
+Notes:
+- By default in development, backend uses SQLite fallback so it runs even if PostgreSQL is not running.
+- To force PostgreSQL locally, set `DJANGO_USE_SQLITE=False`.
 
-## 📝 License
-MIT License
+### 2. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend default URL: `http://127.0.0.1:5173`  
+Backend default URL: `http://127.0.0.1:8000`
+
+## Environment Variables
+
+### Django
+
+- `DJANGO_DEBUG` (default: `True`)
+- `DJANGO_SECRET_KEY`
+- `DJANGO_ALLOWED_HOSTS` (comma-separated)
+- `DJANGO_CORS_ALLOWED_ORIGINS` (comma-separated)
+- `DJANGO_USE_SQLITE` (`True` or `False`)
+
+### PostgreSQL (used when `DJANGO_USE_SQLITE=False`)
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
+
+## API Overview
+
+- Auth
+	- `POST /api/auth/login/`
+	- `POST /api/auth/refresh/`
+	- `POST /api/users/register/`
+	- `GET/PATCH /api/users/profile/`
+- Transactions
+	- `GET/POST /api/transactions/`
+	- `POST /api/transactions/upload/`
+	- `POST /api/transactions/{id}/correct_category/`
+	- `POST /api/transactions/retrain/`
+- Analytics
+	- `GET /api/analytics/summary/`
+	- `GET /api/analytics/forecast/`
+- Predictions
+	- `GET /api/predictions/next-month/`
+- Suggestions
+	- `GET /api/suggestions/`
+	- `POST /api/suggestions/simulate/`
+- Reports
+	- `GET /api/reports/export/?year=YYYY&month=MM`
+
+## Troubleshooting
+
+### Backend run error: connection refused on localhost:5432
+
+Cause: PostgreSQL is not running but backend is trying PostgreSQL.
+
+Fix options:
+1. Use local SQLite fallback: set `DJANGO_USE_SQLITE=True`.
+2. Or start PostgreSQL and keep `DJANGO_USE_SQLITE=False`.
+
+## License
+
+MIT
