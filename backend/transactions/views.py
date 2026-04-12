@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+from django.utils.dateparse import parse_date
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Transaction
 from .parsers import CSVParserError, parse_transactions_frame
-from .serializers import TransactionSerializer
+from .serializers import TransactionSerializer, VALID_CATEGORIES
 import sys
 import os
 
@@ -23,14 +24,44 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Ensure users only see their own transactions
-        return Transaction.objects.filter(user=self.request.user).order_by('-date')
+        queryset = Transaction.objects.filter(user=self.request.user)
+
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        category = self.request.query_params.get('category')
+        transaction_type = self.request.query_params.get('transaction_type')
+        search = self.request.query_params.get('search')
+        ordering = self.request.query_params.get('ordering', '-date')
+
+        parsed_start = parse_date(start_date) if start_date else None
+        parsed_end = parse_date(end_date) if end_date else None
+
+        if parsed_start:
+            queryset = queryset.filter(date__gte=parsed_start)
+        if parsed_end:
+            queryset = queryset.filter(date__lte=parsed_end)
+        if category:
+            queryset = queryset.filter(category=category)
+        if transaction_type in {'CREDIT', 'DEBIT'}:
+            queryset = queryset.filter(transaction_type=transaction_type)
+        if search:
+            queryset = queryset.filter(description__icontains=search.strip())
+
+        allowed_ordering = {'date', '-date', 'amount', '-amount'}
+        if ordering not in allowed_ordering:
+            ordering = '-date'
+
+        return queryset.order_by(ordering)
 
     @action(detail=True, methods=['post'])
     def correct_category(self, request, pk=None):
         transaction = self.get_object()
         new_category = request.data.get('category')
-        if not new_category:
-            return Response({"error": "Category is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if new_category not in VALID_CATEGORIES:
+            return Response(
+                {"error": "Category must be one of the supported categories."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         
         transaction.category = new_category
         transaction.is_manually_corrected = True
