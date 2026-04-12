@@ -38,7 +38,7 @@ export default function Settings() {
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `finance_report_${year}_${String(month).padStart(2, '0')}.pdf`);
+      link.setAttribute('download', `smart_expense_report_${year}_${String(month).padStart(2, '0')}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -58,7 +58,7 @@ export default function Settings() {
   if (loading) return <div className="py-20 text-center text-slate-600 dark:text-slate-300">Loading settings...</div>;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto h-full max-w-3xl space-y-6 overflow-y-auto pr-1">
       <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Settings</h1>
 
       {saved && <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-200">{saved}</div>}

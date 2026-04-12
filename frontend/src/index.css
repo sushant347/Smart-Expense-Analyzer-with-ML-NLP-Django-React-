@@ -8,8 +8,15 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
-  min-height: 100vh;
+  min-height: 100%;
   margin: 0;
   font-family: 'Source Sans 3', Segoe UI, sans-serif;
   color: #0f172a;

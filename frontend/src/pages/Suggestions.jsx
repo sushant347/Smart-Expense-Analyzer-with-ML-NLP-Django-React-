@@ -61,7 +61,7 @@ export default function Suggestions() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="h-full space-y-6 overflow-y-auto pr-1">
       <header>
         <h1 className="flex items-center gap-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">
           <Lightbulb className="text-sky-600 dark:text-sky-300" /> Budget Suggestions

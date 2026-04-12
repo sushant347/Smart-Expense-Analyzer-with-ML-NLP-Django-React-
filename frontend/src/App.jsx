@@ -23,20 +23,20 @@ function ProtectedLayout() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const pageTitle = useMemo(() => 'NPR Finance', []);
+  const pageTitle = useMemo(() => 'Smart Expense', []);
 
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
 
   return (
-    <div className="relative min-h-screen md:flex">
+    <div className="relative h-screen overflow-hidden md:flex">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
       />
-      <main className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/90 md:hidden">
+      <main className="min-w-0 flex flex-1 flex-col overflow-hidden">
+        <header className="z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/90 md:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
@@ -53,7 +53,7 @@ function ProtectedLayout() {
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </header>
-        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto flex h-full w-full max-w-7xl flex-col px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6">
           <Outlet />
         </div>
       </main>
