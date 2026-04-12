@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,7 +10,11 @@ from .models import Transaction
 from .serializers import TransactionSerializer
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
 from ml.categorizer import TransactionCategorizer
 
 class TransactionViewSet(viewsets.ModelViewSet):
