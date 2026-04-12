@@ -1,5 +1,4 @@
 import pandas as pd
-from datetime import datetime
 from pathlib import Path
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -7,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Transaction
+from .parsers import CSVParserError, parse_transactions_frame
 from .serializers import TransactionSerializer
 import sys
 import os
@@ -66,53 +66,27 @@ class CSVUploadView(APIView):
         
         try:
             df = pd.read_csv(file_obj)
-            
-            # Simple heuristic checking for parsing
-            columns = [c.lower().strip() for c in df.columns]
-            
+            detected_source, parsed_rows = parse_transactions_frame(df)
+
             transactions_to_create = []
-            
-            for index, row in df.iterrows():
-                # Attempt to extract generic fields mapping to our model
-                # This logic can be expanded based on exact Khalti/eSewa formats
-                try:
-                    date_val = None
-                    # Fallback lookup common column names
-                    date_col = next((c for c in columns if 'date' in c), None)
-                    if date_col:
-                        raw_date = row.iloc[columns.index(date_col)]
-                        date_val = pd.to_datetime(raw_date).date()
-                    else:
-                        date_val = datetime.now().date()
-                        
-                    amt_col = next((c for c in columns if 'amount' in c or 'rs' in c or 'npr' in c), None)
-                    amount_val = float(row.iloc[columns.index(amt_col)]) if amt_col else 0.0
-                    
-                    desc_col = next((c for c in columns if 'desc' in c or 'detail' in c or 'remarks' in c or 'particular' in c), None)
-                    desc_val = str(row.iloc[columns.index(desc_col)]) if desc_col else "CSV Import"
-                    
-                    # Basic debit/credit check from amount sign or column
-                    trans_type = 'DEBIT'
-                    if amount_val < 0:
-                        trans_type = 'DEBIT'
-                        amount_val = abs(amount_val)
-                    elif 'credit' in columns or 'deposit' in columns:
-                        # Highly dependent on actual generic format
-                        pass 
-                    
-                    transactions_to_create.append(
-                        Transaction(
-                            user=request.user,
-                            date=date_val,
-                            amount=amount_val,
-                            description=desc_val,
-                            transaction_type=trans_type,
-                            source='CSV_IMPORT'
-                        )
+
+            for row in parsed_rows:
+                transactions_to_create.append(
+                    Transaction(
+                        user=request.user,
+                        date=row['date'],
+                        amount=row['amount'],
+                        description=row['description'],
+                        transaction_type=row['transaction_type'],
+                        source=row['source'],
                     )
-                except Exception as row_e:
-                    # Skip rows that don't match or can't be parsed
-                    continue
+                )
+
+            if not transactions_to_create:
+                return Response(
+                    {"error": "No valid rows found in uploaded CSV."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             
             # Build categorizer for predictions
             categorizer = TransactionCategorizer(user_id=request.user.id)
@@ -126,9 +100,14 @@ class CSVUploadView(APIView):
             Transaction.objects.bulk_create(transactions_to_create)
             
             return Response(
-                {"message": f"Successfully parsed and imported {len(transactions_to_create)} transactions."},
+                {
+                    "message": f"Successfully parsed and imported {len(transactions_to_create)} transactions.",
+                    "source": detected_source,
+                },
                 status=status.HTTP_201_CREATED
             )
+        except CSVParserError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
             return Response({"error": f"Error parsing CSV: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
