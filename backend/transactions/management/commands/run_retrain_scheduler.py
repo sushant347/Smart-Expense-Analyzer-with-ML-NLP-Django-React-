@@ -12,17 +12,17 @@ class Command(BaseCommand):
         total_runs = 0
 
         for user in User.objects.all().iterator():
-            run, pending_or_trained, threshold = maybe_run_auto_retraining(user)
-            if run:
+            started, pending_count, threshold = maybe_run_auto_retraining(user)
+            if started:
                 total_runs += 1
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f'Auto retrain complete for {user.username}: version={run.version}, rows={pending_or_trained}'
+                        f'Auto retrain queued for {user.username}: pending corrections={pending_count}'
                     )
                 )
             else:
                 self.stdout.write(
-                    f'Skipped {user.username}: pending corrections={pending_or_trained}, threshold={threshold}'
+                    f'Skipped {user.username}: pending corrections={pending_count}, threshold={threshold}'
                 )
 
         self.stdout.write(self.style.SUCCESS(f'Scheduler finished. retrain_runs={total_runs}'))

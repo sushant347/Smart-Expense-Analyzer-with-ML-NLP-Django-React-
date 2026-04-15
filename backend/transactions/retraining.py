@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from ml.categorizer import TransactionCategorizer
+from core.tasks import dispatch_task
 
 
 AUTO_RETRAIN_THRESHOLD = int(os.getenv('ML_AUTO_RETRAIN_THRESHOLD', '5'))
@@ -44,6 +45,20 @@ def run_retraining_for_user(user, trigger_source: str = 'MANUAL', notes: str = '
 
     return run, len(descriptions)
 
+def enqueue_retraining(user, trigger_source: str = 'MANUAL', notes: str = ''):
+    from .tasks import retrain_user_model_task
+
+    return dispatch_task(
+        retrain_user_model_task,
+        user.id,
+        trigger_source,
+        notes,
+    )
+
+
+def background_retrain(user, trigger_source: str = 'MANUAL', notes: str = ''):
+    """Backward-compatible alias for queued retraining dispatch."""
+    return enqueue_retraining(user, trigger_source, notes)
 
 def maybe_run_auto_retraining(user):
     last_run = ModelTrainingRun.objects.filter(user=user).order_by('-created_at').first()
@@ -57,9 +72,10 @@ def maybe_run_auto_retraining(user):
     if pending_count < AUTO_RETRAIN_THRESHOLD:
         return None, pending_count, AUTO_RETRAIN_THRESHOLD
 
-    run, trained_rows = run_retraining_for_user(
+    # Trigger asynchronously to prevent HTTP blocking
+    enqueue_retraining(
         user=user,
         trigger_source='AUTO',
         notes=f'Auto retrain triggered after {pending_count} new corrections.',
     )
-    return run, trained_rows, AUTO_RETRAIN_THRESHOLD
+    return True, pending_count, AUTO_RETRAIN_THRESHOLD
