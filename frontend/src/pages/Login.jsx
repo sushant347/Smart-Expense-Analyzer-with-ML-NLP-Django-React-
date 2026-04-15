@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Zap } from 'lucide-react';
 import api from '../api/axios';
+import kharchiLogo from '../components/image/Kharchi.png';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -171,9 +172,12 @@ export default function Login() {
         <div className="hidden md:flex md:flex-col md:justify-between p-8" style={{ background: '#111827' }}>
           <div>
             <div className="flex items-center gap-2 mb-6">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-sm font-bold" style={{ background: 'var(--accent)' }}>
-                K
-              </div>
+              <img
+                src={kharchiLogo}
+                alt="Kharchi logo"
+                className="h-8 w-8 rounded-lg object-cover"
+                style={{ border: '1px solid rgba(255,255,255,0.18)' }}
+              />
               <span className="text-sm font-bold text-white">Kharchi</span>
             </div>
             <h1 className="text-2xl font-bold leading-snug text-white">
