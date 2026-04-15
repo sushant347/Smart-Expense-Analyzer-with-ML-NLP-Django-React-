@@ -79,7 +79,7 @@ function ProtectedLayout() {
           </button>
         </header>
 
-        <div className="flex min-h-full w-full flex-col px-4 pb-6 pt-5 sm:px-5 md:px-7 lg:px-8">
+        <div className="flex w-full flex-col px-4 pb-14 pt-5 sm:px-5 sm:pb-16 md:px-7 md:pb-20 lg:px-8">
           <Outlet />
         </div>
       </main>
