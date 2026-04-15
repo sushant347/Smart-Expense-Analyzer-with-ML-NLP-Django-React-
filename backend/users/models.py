@@ -20,6 +20,7 @@ class CustomUser(AbstractUser):
         validators=[MinValueValidator(0)],
     )
     currency = models.CharField(max_length=10, default='NPR')
+    category_savings_goals = models.JSONField(default=dict, blank=True)
 
     REQUIRED_FIELDS = ['email']
 
