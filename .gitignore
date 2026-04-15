@@ -6,3 +6,5 @@ db.sqlite3
 .env
 backend/test_db.sqlite3
 backend/ml_pipeline/
+donow.md
+feature.md
