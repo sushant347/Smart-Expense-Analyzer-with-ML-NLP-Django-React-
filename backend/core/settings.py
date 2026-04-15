@@ -163,10 +163,19 @@ CORS_ALLOWED_ORIGINS = [
     ).split(',') if origin.strip()
 ]
 
+# Permit local frontend dev servers that auto-increment ports (e.g. 5174, 5175).
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https?://localhost:\d+$',
+    r'^https?://127\.0\.0\.1:\d+$',
+]
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'core.renderers.StandardizedJSONRenderer',
+    ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -192,13 +201,21 @@ if 'test' in sys.argv:
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = ()
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_TASK_ALWAYS_EAGER = _env_bool('CELERY_TASK_ALWAYS_EAGER', False)
+CELERY_TASK_EAGER_PROPAGATES = _env_bool('CELERY_TASK_EAGER_PROPAGATES', True)
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
 
 SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)

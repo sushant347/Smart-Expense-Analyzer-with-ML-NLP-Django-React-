@@ -9,3 +9,6 @@ pandas
 numpy
 reportlab
 Pillow
+pytest
+pytest-django
+celery[redis]
