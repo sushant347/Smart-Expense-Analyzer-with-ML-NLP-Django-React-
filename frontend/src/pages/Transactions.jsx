@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
-import { Tag, Filter, RotateCcw, Search, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { Tag, Filter, RotateCcw, Search, ChevronLeft, ChevronRight, ArrowUpDown, Trash2 } from 'lucide-react';
 import { TablePanelSkeleton } from '../components/ui/SkeletonBlocks';
 
 const CATEGORIES = ['Food', 'Rent', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education', 'Transfer', 'Other'];
@@ -108,6 +108,25 @@ export default function Transactions() {
       fetchTransactions(page, filters);
     } catch {
       showToast('Failed to update. Please try again.');
+    }
+  };
+
+  const removeTransaction = async (id) => {
+    const confirmDelete = window.confirm('Remove this transaction permanently?');
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`transactions/${id}/`);
+      setEditId(null);
+      showToast('✓ Transaction removed');
+
+      if (transactions.length === 1 && page > 1) {
+        setPage((p) => Math.max(1, p - 1));
+      } else {
+        fetchTransactions(page, filters);
+      }
+    } catch {
+      showToast('Failed to remove transaction. Please try again.');
     }
   };
 
@@ -290,6 +309,9 @@ export default function Transactions() {
                               {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                             </select>
                             <button onClick={() => correctCategory(t.id)} className="btn-primary py-1.5 text-xs px-3">Save</button>
+                            <button onClick={() => removeTransaction(t.id)} className="btn-danger py-1.5 text-xs px-3 gap-1.5">
+                              <Trash2 size={12} /> Remove
+                            </button>
                             <button onClick={() => setEditId(null)} className="text-xs hover:underline" style={{ color: 'var(--text-muted)' }}>Cancel</button>
                           </div>
                         </td>
