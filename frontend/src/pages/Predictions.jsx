@@ -19,6 +19,7 @@ const CHART_TOOLTIP_STYLE = {
 };
 
 const formatNpr = (value) => `NPR ${Math.round(Number(value) || 0).toLocaleString()}`;
+const normalizeCategoryKey = (value) => String(value || '').trim().toLowerCase();
 
 function PredStat({ label, value, sub, valueColor, note }) {
   return (
@@ -63,7 +64,9 @@ export default function Predictions() {
           : [];
         const baselineByCategory = {};
         categoryRows.forEach((row) => {
-          baselineByCategory[row.category] = Number(row.total) || 0;
+          const key = normalizeCategoryKey(row.category);
+          if (!key) return;
+          baselineByCategory[key] = (baselineByCategory[key] || 0) + (Number(row.total) || 0);
         });
         setCurrentMonthCategoryMap(baselineByCategory);
 
@@ -86,7 +89,7 @@ export default function Predictions() {
     return rows
       .map((row) => {
         const apiActual = Number(row.actual_amount) || 0;
-        const baselineActual = Number(currentMonthCategoryMap[row.category]) || 0;
+        const baselineActual = Number(currentMonthCategoryMap[normalizeCategoryKey(row.category)]) || 0;
         const effectiveActual = apiActual > 0 ? apiActual : baselineActual;
         const projectedAmount = Number(row.projected_amount) || 0;
         const variance = projectedAmount - effectiveActual;
@@ -250,14 +253,22 @@ export default function Predictions() {
               </div>
             )}
             <div className="overflow-x-auto">
-              <table className="data-table">
+              <table className="data-table min-w-[780px] table-fixed">
+                <colgroup>
+                  <col style={{ width: '28%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '16%' }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Category</th>
-                    <th className="text-right">Projected (Next)</th>
-                    <th className="text-right">Actual ({usesCurrentMonthBaseline ? 'Current' : 'Target'})</th>
-                    <th className="text-right">Share</th>
-                    <th className="text-right">Data Points</th>
+                    <th>Projected (Next)</th>
+                    <th>Actual ({usesCurrentMonthBaseline ? 'Current' : 'Target'})</th>
+                    <th>Share</th>
+                    <th>Data Points</th>
                     <th>Variance</th>
                   </tr>
                 </thead>
@@ -276,21 +287,21 @@ export default function Predictions() {
                             <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{p.category}</span>
                           </div>
                         </td>
-                        <td className="text-right font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        <td className="font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
                           {formatNpr(p.projected_amount)}
                         </td>
-                        <td className="text-right" style={{ color: 'var(--text-secondary)' }}>
+                        <td className="tabular-nums" style={{ color: 'var(--text-secondary)' }}>
                           {formatNpr(p.effective_actual_amount)}
                         </td>
-                        <td className="text-right text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                        <td className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
                           {p.projected_share.toFixed(1)}%
                         </td>
-                        <td className="text-right text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <td className="text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
                           {p.data_points} days
                         </td>
                         <td>
                           <span
-                            className="badge text-xs"
+                            className="badge inline-flex text-xs tabular-nums"
                             style={{
                               background: over ? 'var(--amber-subtle)' : 'var(--accent-subtle)',
                               color: over ? 'var(--amber)' : 'var(--accent)',

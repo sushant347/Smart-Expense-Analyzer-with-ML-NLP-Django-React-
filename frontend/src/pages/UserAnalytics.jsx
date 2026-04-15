@@ -29,7 +29,7 @@ import {
 } from '../components/ui/SkeletonBlocks';
 
 const RANGE_OPTIONS = [
-  { value: 3, label: '3M' },
+  { value: 1, label: '1M' },
   { value: 6, label: '6M' },
   { value: 12, label: '12M' },
 ];
@@ -97,7 +97,7 @@ function StatTile({ icon, label, value, hint, accent }) {
 }
 
 export default function UserAnalytics() {
-  const [rangeMonths, setRangeMonths] = useState(6);
+  const [rangeMonths, setRangeMonths] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -148,13 +148,15 @@ export default function UserAnalytics() {
       const currentMonth = now.getMonth() + 1;
       const previous = shiftMonth(currentYear, currentMonth, -1);
       const startDate = getRangeStartDate(rangeMonths);
+      const comparisonSpan = Math.max(2, rangeMonths);
+      const recurringSpan = Math.max(2, rangeMonths);
 
       const [comparisonRes, recurringRes, forecastRes, currentRes, previousRes, txRes] = await Promise.all([
         api.get('analytics/comparison/', {
-          params: { year: currentYear, month: currentMonth, span: rangeMonths },
+          params: { year: currentYear, month: currentMonth, span: comparisonSpan },
         }),
         api.get('analytics/recurring/', {
-          params: { months: rangeMonths, min_occurrences: 2 },
+          params: { months: recurringSpan, min_occurrences: 2 },
         }),
         api.get('analytics/forecast/'),
         api.get('analytics/summary/', {
@@ -563,20 +565,27 @@ export default function UserAnalytics() {
               </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="data-table">
+              <table className="data-table min-w-[780px] table-fixed">
+                <colgroup>
+                  <col style={{ width: '26%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '28%' }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Category</th>
-                    <th className="text-right">Current</th>
-                    <th className="text-right">Previous</th>
-                    <th className="text-right">Share</th>
+                    <th>Current</th>
+                    <th>Previous</th>
+                    <th>Share</th>
                     <th>Change</th>
                   </tr>
                 </thead>
                 <tbody>
                   {categoryMomentum.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <td colSpan={5} className="py-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
                         No category spending data available for this month.
                       </td>
                     </tr>
@@ -591,12 +600,12 @@ export default function UserAnalytics() {
                       return (
                         <tr key={row.category}>
                           <td className="font-medium" style={{ color: 'var(--text-primary)' }}>{row.category}</td>
-                          <td className="text-right" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(row.current)}</td>
-                          <td className="text-right" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(row.previous)}</td>
-                          <td className="text-right text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{row.share.toFixed(1)}%</td>
+                          <td className="tabular-nums" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(row.current)}</td>
+                          <td className="tabular-nums" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(row.previous)}</td>
+                          <td className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>{row.share.toFixed(1)}%</td>
                           <td>
                             <span
-                              className="badge"
+                              className="badge inline-flex tabular-nums"
                               style={{
                                 background: isIncrease ? 'var(--amber-subtle)' : 'var(--accent-subtle)',
                                 color: isIncrease ? 'var(--amber)' : 'var(--accent)',
