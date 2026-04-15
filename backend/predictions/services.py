@@ -38,12 +38,14 @@ def build_month_prediction(user, year: int | None = None, month: int | None = No
     target_year, target_month = _resolve_target(year, month)
     target_start, target_end = _month_bounds(target_year, target_month)
 
-    history = (
+    history_qs = (
         Transaction.objects.filter(user=user, transaction_type='DEBIT', date__lt=target_start)
         .values('date', 'category')
         .annotate(total=Sum('amount'))
         .order_by('date')
     )
+    history = list(history_qs)
+    history_months = sorted({f"{row['date'].year}-{row['date'].month:02d}" for row in history})
 
     if not history:
         return {
@@ -54,6 +56,9 @@ def build_month_prediction(user, year: int | None = None, month: int | None = No
             'total_projected': 0.0,
             'total_actual': 0.0,
             'gap': 0.0,
+            'gap_vs_target_actual': 0.0,
+            'months_of_data': 0,
+            'history_months': [],
         }
 
     actual_qs = (
@@ -94,6 +99,7 @@ def build_month_prediction(user, year: int | None = None, month: int | None = No
 
     total_projected = round(sum(row['projected_amount'] for row in predictions), 2)
     total_actual = round(sum(actual_by_category.values()), 2)
+    gap_vs_target_actual = round(total_projected - total_actual, 2)
 
     return {
         'target_year': target_year,
@@ -101,6 +107,8 @@ def build_month_prediction(user, year: int | None = None, month: int | None = No
         'predictions': predictions,
         'total_projected': total_projected,
         'total_actual': total_actual,
-        'gap': round(total_projected - total_actual, 2),
-        'months_of_data': 6,
+        'gap': gap_vs_target_actual,
+        'gap_vs_target_actual': gap_vs_target_actual,
+        'months_of_data': len(history_months),
+        'history_months': history_months,
     }
