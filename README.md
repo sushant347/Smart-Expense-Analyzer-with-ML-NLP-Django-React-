@@ -77,7 +77,9 @@ Backend default URL: `http://127.0.0.1:8000`
 - `DJANGO_SECRET_KEY`
 - `DJANGO_ALLOWED_HOSTS` (comma-separated)
 - `DJANGO_CORS_ALLOWED_ORIGINS` (comma-separated)
+- `DJANGO_CSRF_TRUSTED_ORIGINS` (comma-separated, include your Vercel URL)
 - `DJANGO_USE_SQLITE` (`True` or `False`)
+- `DATABASE_URL` (Neon PostgreSQL URL; preferred in production)
 
 ### PostgreSQL (used when `DJANGO_USE_SQLITE=False`)
 
@@ -119,6 +121,59 @@ Cause: PostgreSQL is not running but backend is trying PostgreSQL.
 Fix options:
 1. Use local SQLite fallback: set `DJANGO_USE_SQLITE=True`.
 2. Or start PostgreSQL and keep `DJANGO_USE_SQLITE=False`.
+
+## Deployment (Render + Neon + Vercel)
+
+This repository is prepared for:
+- Backend: Render web service
+- Database: Neon PostgreSQL
+- Frontend: Vercel
+
+### 1. Neon (Database)
+
+1. Create a new Neon project and database.
+2. Copy the full connection string (looks like `postgresql://...`).
+3. Keep it for `DATABASE_URL` in Render.
+
+### 2. Render (Backend)
+
+This repo includes a `render.yaml` blueprint at project root.
+
+1. In Render, click **New +** -> **Blueprint**.
+2. Connect this GitHub repository and deploy.
+3. Set required env vars in Render service:
+	- `DATABASE_URL`: Neon connection string
+	- `DJANGO_SECRET_KEY`: strong random string
+	- `DJANGO_DEBUG`: `False`
+	- `DJANGO_USE_SQLITE`: `False`
+	- `DJANGO_ALLOWED_HOSTS`: include `.onrender.com`
+	- `DJANGO_CORS_ALLOWED_ORIGINS`: include your Vercel URL (for example `https://your-app.vercel.app`)
+	- `DJANGO_CSRF_TRUSTED_ORIGINS`: include your Vercel URL (for example `https://your-app.vercel.app`)
+
+The service runs migrations at startup automatically.
+
+### 3. Vercel (Frontend)
+
+This repo includes `frontend/vercel.json` with SPA rewrite support.
+
+1. In Vercel, import the repository.
+2. Set **Root Directory** to `frontend`.
+3. Set environment variable:
+	- `VITE_API_BASE_URL`: `https://<your-render-service>.onrender.com/api/`
+4. Deploy.
+
+### 4. Final check
+
+1. Open Vercel app.
+2. Register/Login.
+3. Verify API requests go to Render domain and no CORS errors appear.
+
+## Logo
+
+Kharchi branding uses the uploaded image at:
+- `frontend/src/components/image/Kharchi.png`
+
+The app sidebar/auth branding and browser favicon are configured to use this asset.
 
 ## License
 
