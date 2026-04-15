@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Cell,
@@ -41,6 +41,8 @@ function PredStat({ label, value, sub, valueColor, note }) {
 export default function Predictions() {
   const [data, setData] = useState(null);
   const [currentMonthExpense, setCurrentMonthExpense] = useState(null);
+  const [currentMonthCategoryMap, setCurrentMonthCategoryMap] = useState({});
+  const [currentMonthLabel, setCurrentMonthLabel] = useState('Current Month');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,26 +55,55 @@ export default function Predictions() {
     ])
       .then(([predRes, summaryRes]) => {
         setData(predRes.data);
-        setCurrentMonthExpense(summaryRes.data?.total_expense ?? null);
+        const summaryPayload = summaryRes.data || {};
+        setCurrentMonthExpense(summaryPayload.total_expense ?? null);
+
+        const categoryRows = Array.isArray(summaryPayload.monthly_category_breakdown)
+          ? summaryPayload.monthly_category_breakdown
+          : [];
+        const baselineByCategory = {};
+        categoryRows.forEach((row) => {
+          baselineByCategory[row.category] = Number(row.total) || 0;
+        });
+        setCurrentMonthCategoryMap(baselineByCategory);
+
+        setCurrentMonthLabel(
+          new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
+          }),
+        );
       })
       .catch(() => setError('Failed to load predictions.'))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="space-y-5">
-        <SkeletonBlock className="h-10 w-48 rounded-lg" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {[...Array(3)].map((_, i) => <SkeletonBlock key={i} className="h-28" />)}
-        </div>
-        <ChartPanelSkeleton heightClass="h-72" />
-        <TablePanelSkeleton rows={6} headerCount={5} />
-      </div>
-    );
-  }
-
   const totalProjected = Number(data?.total_projected || 0);
+
+  const organizedPredictions = useMemo(() => {
+    const rows = Array.isArray(data?.predictions) ? data.predictions : [];
+
+    return rows
+      .map((row) => {
+        const apiActual = Number(row.actual_amount) || 0;
+        const baselineActual = Number(currentMonthCategoryMap[row.category]) || 0;
+        const effectiveActual = apiActual > 0 ? apiActual : baselineActual;
+        const projectedAmount = Number(row.projected_amount) || 0;
+        const variance = projectedAmount - effectiveActual;
+        return {
+          ...row,
+          projected_amount: projectedAmount,
+          effective_actual_amount: effectiveActual,
+          variance,
+          projected_share: totalProjected > 0 ? (projectedAmount / totalProjected) * 100 : 0,
+          actual_source: apiActual > 0 ? 'target' : (baselineActual > 0 ? 'current' : 'none'),
+        };
+      })
+      .sort((a, b) => b.projected_amount - a.projected_amount);
+  }, [data, currentMonthCategoryMap, totalProjected]);
+
+  const usesCurrentMonthBaseline = organizedPredictions.some((row) => row.actual_source === 'current');
+
   const currentExpenseValue = Number(currentMonthExpense || 0);
   const hasCurrentExpense = currentMonthExpense !== null;
   const gapVsCurrent = hasCurrentExpense ? totalProjected - currentExpenseValue : null;
@@ -89,6 +120,19 @@ export default function Predictions() {
   const gapColor = !hasCurrentExpense
     ? 'var(--text-muted)'
     : (gapVsCurrent >= 0 ? '#d97706' : 'var(--accent)');
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <SkeletonBlock className="h-10 w-48 rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[...Array(3)].map((_, i) => <SkeletonBlock key={i} className="h-28" />)}
+        </div>
+        <ChartPanelSkeleton heightClass="h-72" />
+        <TablePanelSkeleton rows={6} headerCount={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-5">
@@ -114,7 +158,7 @@ export default function Predictions() {
         </div>
       )}
 
-      {!data?.predictions?.length ? (
+      {!organizedPredictions.length ? (
         <div
           className="flex flex-col items-center justify-center rounded-xl border py-20 text-center"
           style={{ background: 'var(--surface-1)', borderColor: 'var(--stroke-soft)' }}
@@ -161,7 +205,7 @@ export default function Predictions() {
             <h2 className="section-title mb-5">Predicted Spending by Category</h2>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
-                data={data.predictions}
+                data={organizedPredictions}
                 margin={{ top: 4, right: 8, left: -12, bottom: 28 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--stroke-soft)" vertical={false} />
@@ -187,7 +231,7 @@ export default function Predictions() {
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
                 <Bar dataKey="projected_amount" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                  {data.predictions.map((_, idx) => (
+                  {organizedPredictions.map((_, idx) => (
                     <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
                   ))}
                 </Bar>
@@ -200,20 +244,26 @@ export default function Predictions() {
             <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--stroke-soft)' }}>
               <h2 className="section-title">Category Breakdown</h2>
             </div>
+            {usesCurrentMonthBaseline && (
+              <div className="px-5 py-3 text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--stroke-soft)', background: 'var(--surface-hover)' }}>
+                Actual values are shown from {currentMonthLabel} because next-month actuals are not available yet.
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Category</th>
-                    <th className="text-right">Predicted</th>
-                    <th className="text-right">Actual</th>
+                    <th className="text-right">Projected (Next)</th>
+                    <th className="text-right">Actual ({usesCurrentMonthBaseline ? 'Current' : 'Target'})</th>
+                    <th className="text-right">Share</th>
                     <th className="text-right">Data Points</th>
                     <th>Variance</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.predictions.map((p, idx) => {
-                    const diff = p.projected_amount - p.actual_amount;
+                  {organizedPredictions.map((p, idx) => {
+                    const diff = p.variance;
                     const over = diff > 0;
                     return (
                       <tr key={p.category}>
@@ -230,7 +280,10 @@ export default function Predictions() {
                           {formatNpr(p.projected_amount)}
                         </td>
                         <td className="text-right" style={{ color: 'var(--text-secondary)' }}>
-                          {formatNpr(p.actual_amount)}
+                          {formatNpr(p.effective_actual_amount)}
+                        </td>
+                        <td className="text-right text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                          {p.projected_share.toFixed(1)}%
                         </td>
                         <td className="text-right text-xs" style={{ color: 'var(--text-muted)' }}>
                           {p.data_points} days
