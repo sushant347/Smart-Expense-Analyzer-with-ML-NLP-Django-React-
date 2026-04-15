@@ -25,22 +25,35 @@ class AuthFlowTests(APITestCase):
 			format='json',
 		)
 		self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-		self.assertIn('access', login_response.data)
-		self.assertIn('refresh', login_response.data)
-		self.assertIn('user', login_response.data)
+		login_payload = login_response.data.get('data', login_response.data)
+		self.assertIn('access', login_payload)
+		self.assertIn('refresh', login_payload)
+		self.assertIn('user', login_payload)
 
-		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_payload['access']}")
 		profile_response = self.client.get(reverse('user-profile'))
 		self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
-		self.assertEqual(profile_response.data['username'], 'testuser')
+		profile_payload = profile_response.data.get('data', profile_response.data)
+		self.assertEqual(profile_payload['username'], 'testuser')
 
 		patch_response = self.client.patch(
 			reverse('user-profile'),
-			{'monthly_income': '65000.00'},
+			{
+				'monthly_income': '65000.00',
+				'currency': 'USD',
+				'category_savings_goals': {
+					'Food': 12000,
+					'Transport': 5000,
+				},
+			},
 			format='json',
 		)
 		self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
-		self.assertEqual(str(patch_response.data['monthly_income']), '65000.00')
+		patch_payload = patch_response.data.get('data', patch_response.data)
+		self.assertEqual(str(patch_payload['monthly_income']), '65000.00')
+		self.assertEqual(patch_payload['currency'], 'NPR')
+		self.assertEqual(patch_payload['category_savings_goals']['Food'], 12000.0)
+		self.assertEqual(patch_payload['category_savings_goals']['Transport'], 5000.0)
 
 	def test_profile_requires_auth(self):
 		response = self.client.get(reverse('user-profile'))
