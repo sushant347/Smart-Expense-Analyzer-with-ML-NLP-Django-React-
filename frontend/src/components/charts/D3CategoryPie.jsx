@@ -124,7 +124,7 @@ export default function D3CategoryPie({ data = [] }) {
       </div>
 
       {/* Legend grid — replaces the old sidebar legend */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+      <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
         {normalizedData.map((item, index) => {
           const isActive = activeIndex === index;
           const percent = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
@@ -141,7 +141,7 @@ export default function D3CategoryPie({ data = [] }) {
               onMouseLeave={() => setActiveIndex(null)}
             >
               <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
-              <span className="truncate text-sm font-semibold flex-1" style={{ color: 'var(--text-secondary)' }}>{item.category}</span>
+              <span className="text-sm font-semibold flex-1 whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>{item.category}</span>
               <span className="flex flex-col items-end leading-tight flex-shrink-0">
                 <span
                   className="text-sm font-bold"

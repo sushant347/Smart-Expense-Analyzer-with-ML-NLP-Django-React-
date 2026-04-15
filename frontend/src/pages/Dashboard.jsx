@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  AreaChart, Area, Legend,
+  AreaChart, Area, Legend, LineChart, Line,
 } from 'recharts';
 import { Link } from 'react-router-dom';
 import {
@@ -24,7 +24,15 @@ function formatShortDate(value) {
 }
 function formatMonthLabel(value) {
   if (!value) return '';
-  return String(value).slice(0, 3);
+  const [yearString, monthString] = String(value).split('-');
+  const year = Number(yearString);
+  const month = Number(monthString);
+  if (!year || !month) return String(value);
+
+  const parsed = new Date(year, month - 1, 1);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+
+  return parsed.toLocaleDateString('en-US', { month: 'short' });
 }
 
 function StatCard({ icon, label, value, hint, accentColor }) {
@@ -364,6 +372,43 @@ export default function Dashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Savings rate trend */}
+          <div className="card p-4 sm:p-5">
+            <h3 className="section-title mb-4">Savings Rate Trend</h3>
+            <ResponsiveContainer width="100%" height={210}>
+              <LineChart data={comparisonSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--stroke-soft)" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tickFormatter={formatMonthLabel}
+                  stroke="var(--text-muted)"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10 }}
+                />
+                <YAxis
+                  stroke="var(--text-muted)"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `${Math.round(Number(v) || 0)}%`}
+                  tick={{ fontSize: 10 }}
+                />
+                <Tooltip
+                  formatter={(v) => [`${Number(v || 0).toFixed(1)}%`, 'Savings Rate']}
+                  contentStyle={TOOLTIP_STYLE}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="savings_rate"
+                  stroke="#7c3aed"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         <div className="space-y-4 sm:space-y-5">
@@ -426,11 +471,17 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {recurringItems.slice(0, 5).map((item) => (
+              <>
+                {recurringItems.length > 5 && (
+                  <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Showing top 5 at a glance. Scroll to view more.
+                  </p>
+                )}
+                <div className="space-y-2 overflow-y-auto pr-1 max-h-[360px]">
+                  {recurringItems.map((item) => (
                   <div
                     key={`${item.description}-${item.last_seen}`}
-                    className="flex items-start justify-between rounded-lg p-3 gap-3"
+                    className="flex min-h-[64px] items-start justify-between rounded-lg p-3 gap-3"
                     style={{ background: 'var(--surface-hover)', border: '1px solid var(--stroke-soft)' }}
                   >
                     <div className="min-w-0">
@@ -443,8 +494,9 @@ export default function Dashboard() {
                       {formatCurrency(item.predicted_monthly_impact)}/mo
                     </span>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
