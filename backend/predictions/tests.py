@@ -18,7 +18,8 @@ class PredictionAPITests(APITestCase):
 			{'username': 'pred_user', 'password': 'StrongPass123!'},
 			format='json',
 		)
-		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+		token_payload = login.data.get('data', login.data)
+		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_payload['access']}")
 
 		for day in range(1, 16):
 			Transaction.objects.create(
@@ -45,11 +46,12 @@ class PredictionAPITests(APITestCase):
 	def test_prediction_payload_contains_predicted_vs_actual(self):
 		response = self.client.get(reverse('predictions-next-month'), {'year': 2026, 'month': 4})
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
-		self.assertIn('predictions', response.data)
-		self.assertIn('total_projected', response.data)
-		self.assertIn('total_actual', response.data)
-		self.assertIn('gap', response.data)
-		self.assertGreaterEqual(response.data['total_projected'], 0)
+		payload = response.data.get('data', response.data)
+		self.assertIn('predictions', payload)
+		self.assertIn('total_projected', payload)
+		self.assertIn('total_actual', payload)
+		self.assertIn('gap', payload)
+		self.assertGreaterEqual(payload['total_projected'], 0)
 
 	def test_prediction_query_requires_both_year_and_month(self):
 		response = self.client.get(reverse('predictions-next-month'), {'year': 2026})
