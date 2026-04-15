@@ -58,15 +58,90 @@ const TOOLTIP_STYLE = {
   fontSize: '13px',
 };
 
+const CATEGORY_RANGE_OPTIONS = [
+  { key: 'one_week', label: '1 Week' },
+  { key: 'two_week', label: '2 Weeks' },
+  { key: 'six_month', label: '6 Months' },
+  { key: 'lifetime', label: 'Lifetime' },
+];
+
+function getRangeStartDate(rangeKey) {
+  const now = new Date();
+  const start = new Date(now);
+
+  if (rangeKey === 'one_week') {
+    start.setDate(start.getDate() - 7);
+  } else if (rangeKey === 'two_week') {
+    start.setDate(start.getDate() - 14);
+  } else if (rangeKey === 'six_month') {
+    start.setMonth(start.getMonth() - 6);
+  } else {
+    return null;
+  }
+
+  return start.toISOString().split('T')[0];
+}
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [comparison, setComparison] = useState(null);
   const [recurring, setRecurring] = useState(null);
+  const [categoryData, setCategoryData] = useState([]);
+  const [categoryRange, setCategoryRange] = useState('six_month');
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchAnalytics(); }, []);
+  useEffect(() => { fetchCategorySplit(categoryRange); }, [categoryRange]);
+
+  const fetchCategorySplit = async (rangeKey) => {
+    setCategoryLoading(true);
+    try {
+      const startDate = getRangeStartDate(rangeKey);
+      const totals = new Map();
+
+      let page = 1;
+      let hasNext = true;
+
+      while (hasNext) {
+        const params = {
+          page,
+          page_size: 100,
+          transaction_type: 'DEBIT',
+          ordering: '-date',
+        };
+        if (startDate) params.start_date = startDate;
+
+        const res = await api.get('transactions/', { params });
+        const payload = res.data || {};
+        const rows = Array.isArray(payload.results)
+          ? payload.results
+          : (Array.isArray(payload) ? payload : []);
+
+        rows.forEach((row) => {
+          const category = row.category || 'Other';
+          const amount = Number(row.amount) || 0;
+          totals.set(category, (totals.get(category) || 0) + amount);
+        });
+
+        hasNext = Boolean(payload.next);
+        page += 1;
+        if (page > 200) break;
+      }
+
+      const normalized = Array.from(totals.entries())
+        .map(([category, total]) => ({ category, total: Math.round(total * 100) / 100 }))
+        .sort((a, b) => b.total - a.total);
+
+      setCategoryData(normalized);
+    } catch (err) {
+      console.error('Failed to load category split:', err);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -91,7 +166,6 @@ export default function Dashboard() {
     }
   };
 
-  const categoryData = useMemo(() => data?.monthly_category_breakdown || [], [data]);
   const weeklyData = useMemo(() => data?.weekly_trends || [], [data]);
   const comparisonSeries = useMemo(() => comparison?.series || [], [comparison]);
   const recurringItems = useMemo(() => recurring?.recurring_expenses || [], [recurring]);
@@ -105,8 +179,8 @@ export default function Dashboard() {
           {[...Array(4)].map((_, i) => <SkeletonBlock key={i} className="h-28" />)}
         </div>
         <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-5">
-          <ChartPanelSkeleton className="lg:col-span-3" heightClass="h-60" />
           <ChartPanelSkeleton className="lg:col-span-2" heightClass="h-60" />
+          <ChartPanelSkeleton className="lg:col-span-3" heightClass="h-60" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
           <ChartPanelSkeleton heightClass="h-52" />
@@ -193,7 +267,7 @@ export default function Dashboard() {
       {/* ── Charts row ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-5">
         {/* Weekly bar chart */}
-        <div className="card p-4 sm:p-5 lg:col-span-3">
+        <div className="card p-4 sm:p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="section-title">Weekly Spending</h3>
             <span className="rounded-md px-2.5 py-1 text-xs font-semibold" style={{ background: 'var(--surface-hover)', color: 'var(--text-muted)' }}>
@@ -201,7 +275,7 @@ export default function Dashboard() {
             </span>
           </div>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+            <BarChart data={weeklyData} margin={{ top: 4, right: 8, left: 2, bottom: 18 }}>
               <defs>
                 <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#16a34a" stopOpacity={0.9} />
@@ -209,8 +283,23 @@ export default function Dashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--stroke-soft)" vertical={false} />
-              <XAxis dataKey="week_start" tickFormatter={formatShortDate} stroke="var(--text-muted)" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-              <YAxis stroke="var(--text-muted)" tickFormatter={(v) => `${Math.round((Number(v) || 0) / 1000)}k`} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+              <XAxis
+                dataKey="week_start"
+                tickFormatter={formatShortDate}
+                stroke="var(--text-muted)"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Week', position: 'insideBottom', offset: -6, fill: 'var(--text-muted)', fontSize: 11 }}
+              />
+              <YAxis
+                stroke="var(--text-muted)"
+                tickFormatter={(v) => `${Math.round((Number(v) || 0) / 1000)}k`}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Amount (NPR)', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11 }}
+              />
               <Tooltip cursor={{ fill: 'var(--surface-hover)' }} labelFormatter={(v) => `Week of ${formatShortDate(v)}`} formatter={(v) => [formatCurrency(v), 'Spending']} contentStyle={TOOLTIP_STYLE} />
               <Bar dataKey="amount" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={44} />
             </BarChart>
@@ -218,10 +307,36 @@ export default function Dashboard() {
         </div>
 
         {/* Category pie — full height, no duplicate list below */}
-        <div className="card p-4 sm:p-5 lg:col-span-2">
-          <h3 className="section-title mb-4">Category Split</h3>
-          {/* D3CategoryPie already has its own legend — no duplicate list needed */}
-          <D3CategoryPie data={categoryData} />
+        <div className="card p-4 sm:p-5 lg:col-span-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="section-title">Category Split</h3>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {CATEGORY_RANGE_OPTIONS.map((option) => {
+                const isActive = categoryRange === option.key;
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setCategoryRange(option.key)}
+                    className="rounded-md px-2.5 py-1 text-xs font-semibold transition"
+                    style={{
+                      background: isActive ? 'var(--accent-subtle)' : 'var(--surface-hover)',
+                      color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                      border: `1px solid ${isActive ? 'rgba(22,163,74,0.3)' : 'var(--stroke-soft)'}`,
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {categoryLoading ? (
+            <SkeletonBlock className="h-56" />
+          ) : (
+            <D3CategoryPie data={categoryData} />
+          )}
         </div>
       </div>
 
