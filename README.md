@@ -7,7 +7,8 @@ Full-stack personal finance tracker with categorization, forecasting, budgeting 
 - CSV import with source detection (Bank, eSewa, Khalti)
 - Manual transaction entry
 - Transaction categorization with confidence and uncertain flag
-- Monthly analytics and weekly trends
+- Advanced dashboard with weekly spending, category split range filters, cashflow, and savings-rate trends
+- User analytics view with category momentum and recurring-spend signals
 - Next-month spending prediction
 - Savings suggestions and budget simulation
 - JWT authentication and per-user data isolation
@@ -18,6 +19,7 @@ Full-stack personal finance tracker with categorization, forecasting, budgeting 
 - Backend: Django, Django REST Framework, Simple JWT
 - Database: PostgreSQL (production), SQLite fallback (local development)
 - Frontend: React (Vite), Tailwind CSS, Recharts
+- Frontend charting: Recharts + D3 (category donut)
 - ML: scikit-learn, pandas, numpy
 - Reporting: reportlab
 
@@ -98,12 +100,15 @@ Backend default URL: `http://127.0.0.1:8000`
 	- `GET/PATCH /api/users/profile/`
 - Transactions
 	- `GET/POST /api/transactions/`
+	- `GET/PATCH/DELETE /api/transactions/{id}/`
 	- `POST /api/transactions/upload/`
 	- `POST /api/transactions/{id}/correct_category/`
 	- `POST /api/transactions/retrain/`
 - Analytics
 	- `GET /api/analytics/summary/`
 	- `GET /api/analytics/forecast/`
+	- `GET /api/analytics/comparison/`
+	- `GET /api/analytics/recurring/`
 - Predictions
 	- `GET /api/predictions/next-month/`
 - Suggestions
