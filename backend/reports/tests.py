@@ -18,7 +18,8 @@ class ReportsAPITests(APITestCase):
 			{'username': 'report_user', 'password': 'StrongPass123!'},
 			format='json',
 		)
-		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+		token_payload = login.data.get('data', login.data)
+		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_payload['access']}")
 
 		Transaction.objects.create(
 			user=self.user,
@@ -43,7 +44,7 @@ class ReportsAPITests(APITestCase):
 		response = self.client.get(reverse('report-export'), {'year': 2026, 'month': 4})
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertEqual(response['Content-Type'], 'application/pdf')
-		self.assertIn('attachment; filename="smart_expense_report_2026_04.pdf"', response['Content-Disposition'])
+		self.assertIn('attachment; filename="kharchi_report_2026_04.pdf"', response['Content-Disposition'])
 		self.assertGreater(len(response.content), 0)
 
 	def test_invalid_month_returns_400(self):
