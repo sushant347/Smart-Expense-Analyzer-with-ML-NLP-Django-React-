@@ -1,4 +1,4 @@
-# Smart Expense Analyzer (Nepal)
+# Kharchi (Nepal)
 
 Full-stack personal finance tracker with categorization, forecasting, budgeting suggestions, and PDF reporting.
 
