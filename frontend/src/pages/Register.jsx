@@ -1,72 +1,172 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 
+const FIELDS = [
+  { label: 'Username', name: 'username', type: 'text', placeholder: 'Choose a username', required: true },
+  { label: 'Email address', name: 'email', type: 'email', placeholder: 'you@example.com', required: true },
+  { label: 'Password', name: 'password', type: 'password', placeholder: 'Min. 8 characters', required: true },
+  { label: 'Monthly Income (NPR)', name: 'monthly_income', type: 'number', placeholder: 'e.g. 65000', required: false },
+  { label: 'Savings Goal (NPR)', name: 'savings_goal', type: 'number', placeholder: 'e.g. 200000', required: false },
+];
+
 export default function Register() {
-  const [form, setForm] = useState({ username: '', email: '', password: '', monthly_income: '', savings_goal: '' });
+  const [form, setForm] = useState({
+    username: '', email: '', password: '',
+    monthly_income: '', savings_goal: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       await api.post('users/register/', { ...form, currency: 'NPR' });
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.username?.[0] || 'Registration failed. Please try again.');
+      const responsePayload = err?.response?.data;
+      const messagePayload = responsePayload?.message;
+
+      let resolvedMessage = 'Registration failed. Please try again.';
+
+      if (typeof messagePayload === 'string' && messagePayload.trim()) {
+        resolvedMessage = messagePayload;
+      } else if (Array.isArray(messagePayload) && messagePayload.length > 0) {
+        resolvedMessage = String(messagePayload[0]);
+      } else if (messagePayload && typeof messagePayload === 'object') {
+        const firstValue = Object.values(messagePayload)[0];
+        if (Array.isArray(firstValue) && firstValue.length > 0) {
+          resolvedMessage = String(firstValue[0]);
+        } else if (typeof firstValue === 'string' && firstValue.trim()) {
+          resolvedMessage = firstValue;
+        }
+      } else {
+        const fallbackFieldError = responsePayload?.username?.[0] || responsePayload?.email?.[0];
+        if (fallbackFieldError) {
+          resolvedMessage = fallbackFieldError;
+        }
+      }
+
+      setError(resolvedMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex h-full items-center justify-center overflow-hidden px-4 py-6">
-      <img
-        src="https://images.unsplash.com/photo-1579621970795-87facc2f976d?auto=format&fit=crop&w=1600&q=80"
-        alt="Smart Expense registration background"
-        className="absolute inset-0 h-full w-full object-cover opacity-20"
+    <div
+      className="relative flex h-full items-center justify-center overflow-hidden overflow-y-auto px-4 py-8"
+      style={{ background: '#f3f4f6' }}
+    >
+      {/* Background pattern */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.06) 1px, transparent 0)`,
+          backgroundSize: '28px 28px',
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100/95 via-slate-200/80 to-emerald-100/75 dark:from-slate-950/95 dark:via-slate-900/85 dark:to-slate-800/85" />
 
-      <div className="relative w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/90 md:grid md:grid-cols-2">
-        <div className="hidden bg-emerald-900 p-8 text-white md:flex md:flex-col md:justify-between">
+      <div
+        className="relative w-full max-w-3xl overflow-hidden rounded-2xl shadow-2xl md:grid md:grid-cols-2 my-4"
+        style={{ border: '1px solid var(--stroke-soft)' }}
+      >
+        {/* Left branding panel */}
+        <div
+          className="hidden md:flex md:flex-col md:justify-between p-8"
+          style={{ background: '#111827' }}
+        >
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Smart Expense</p>
-            <h1 className="mt-3 text-3xl font-semibold leading-tight">Build better money habits, month by month.</h1>
+            <div className="flex items-center gap-2 mb-6">
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-sm font-bold"
+                style={{ background: 'var(--accent)' }}
+              >
+                K
+              </div>
+              <span className="text-sm font-bold text-white">Kharchi</span>
+            </div>
+            <h1 className="text-2xl font-bold leading-snug text-white">
+              Build better money habits, month by month.
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: '#9ca3af' }}>
+              Set up your profile once. Get categorized insights, forecasts, and personalised savings advice automatically.
+            </p>
           </div>
-          <p className="text-sm text-emerald-100">Create your account once and start getting categorized insights, forecasts, and savings suggestions.</p>
+          <p className="text-xs mt-8" style={{ color: '#6b7280' }}>
+            Your data stays on your server — no third-party financial access.
+          </p>
         </div>
 
-        <div className="p-7 sm:p-8">
-          <h2 className="text-center text-3xl font-semibold text-slate-900 dark:text-slate-100">Create your account</h2>
-          <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-300">Set up your Smart Expense profile and begin tracking.</p>
-          {error && <div className="mb-4 mt-6 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300">{error}</div>}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            {[
-              { label: 'Username', name: 'username', type: 'text' },
-              { label: 'Email', name: 'email', type: 'email' },
-              { label: 'Password', name: 'password', type: 'password' },
-              { label: 'Monthly Income (NPR)', name: 'monthly_income', type: 'number' },
-              { label: 'Savings Goal (NPR)', name: 'savings_goal', type: 'number' },
-            ].map(field => (
+        {/* Right form panel */}
+        <div className="p-7 sm:p-8" style={{ background: 'var(--surface-1)' }}>
+          <div className="mb-6">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Create your account</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Start tracking your expenses today.</p>
+          </div>
+
+          {error && <div className="error-box mb-5">{error}</div>}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {FIELDS.map((field) => (
               <div key={field.name}>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{field.label}</label>
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-                  required={['username', 'email', 'password'].includes(field.name)}
-                />
+                <label
+                  htmlFor={`register-${field.name}`}
+                  className="block text-sm font-medium mb-1.5"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {field.label}
+                  {!field.required && <span className="ml-1 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>(optional)</span>}
+                </label>
+                <div className="relative">
+                  <input
+                    id={`register-${field.name}`}
+                    type={field.name === 'password' && showPassword ? 'text' : field.type}
+                    name={field.name}
+                    value={form[field.name]}
+                    onChange={handleChange}
+                    className="input-surface"
+                    placeholder={field.placeholder}
+                    required={field.required}
+                  />
+                  {field.name === 'password' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'var(--text-muted)' }}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
-            <button type="submit" className="w-full rounded-lg bg-sky-600 py-3 font-semibold text-white transition hover:bg-sky-700">
-              Create Account
+
+            <button
+              id="btn-register"
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full gap-2 py-3 mt-2"
+            >
+              <UserPlus size={16} />
+              {loading ? 'Creating account…' : 'Create Account'}
             </button>
           </form>
-          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
-            Already registered? <Link to="/login" className="font-semibold text-sky-700 hover:underline dark:text-sky-300">Sign in</Link>
+
+          <p className="mt-5 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+            Already registered?{' '}
+            <Link to="/login" className="font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
+              Sign in
+            </Link>
           </p>
         </div>
       </div>

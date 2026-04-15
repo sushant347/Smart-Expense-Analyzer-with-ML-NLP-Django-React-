@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Menu, Moon, Sun } from 'lucide-react';
 import Sidebar from './components/Sidebar';
@@ -10,6 +10,7 @@ import Upload from './pages/Upload';
 import Predictions from './pages/Predictions';
 import Settings from './pages/Settings';
 import Suggestions from './pages/Suggestions';
+import './App.css';
 
 const isAuthenticated = () => !!localStorage.getItem('access_token');
 
@@ -23,37 +24,52 @@ function ProtectedLayout() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const pageTitle = useMemo(() => 'Smart Expense', []);
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
 
   return (
-    <div className="relative h-screen overflow-hidden md:flex">
+    <div className="relative flex h-screen w-full flex-col overflow-hidden md:flex-row">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         theme={theme}
-        onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
+        onToggleTheme={toggleTheme}
       />
-      <main className="min-w-0 flex flex-1 flex-col overflow-hidden">
-        <header className="z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/90 md:hidden">
+
+      <main className="min-w-0 flex flex-1 flex-col overflow-x-hidden overflow-y-auto"
+        style={{ background: 'var(--surface-2)' }}
+      >
+        {/* Mobile top bar */}
+        <header
+          className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden"
+          style={{
+            background: 'var(--surface-1)',
+            borderBottom: '1px solid var(--stroke-soft)',
+          }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            className="rounded-lg p-2 transition"
+            style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)' }}
             aria-label="Open menu"
           >
             <Menu size={18} />
           </button>
-          <span className="text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100">{pageTitle}</span>
+          <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            Kharchi
+          </span>
           <button
-            onClick={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
-            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            onClick={toggleTheme}
+            className="rounded-lg p-2 transition"
+            style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)' }}
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </header>
-        <div className="mx-auto flex h-full w-full max-w-7xl flex-col px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-6">
+
+        <div className="flex min-h-full w-full flex-col px-4 pb-6 pt-5 sm:px-5 md:px-7 lg:px-8">
           <Outlet />
         </div>
       </main>
