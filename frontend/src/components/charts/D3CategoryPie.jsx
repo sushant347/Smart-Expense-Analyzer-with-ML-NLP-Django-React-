@@ -141,9 +141,17 @@ export default function D3CategoryPie({ data = [] }) {
               onMouseLeave={() => setActiveIndex(null)}
             >
               <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
-              <span className="truncate font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>{item.category}</span>
-              <span className="font-bold flex-shrink-0" style={{ color: isActive ? PIE_COLORS[index % PIE_COLORS.length] : 'var(--text-muted)' }}>
-                {percent}%
+              <span className="truncate text-sm font-semibold flex-1" style={{ color: 'var(--text-secondary)' }}>{item.category}</span>
+              <span className="flex flex-col items-end leading-tight flex-shrink-0">
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: isActive ? PIE_COLORS[index % PIE_COLORS.length] : 'var(--text-primary)' }}
+                >
+                  {percent}%
+                </span>
+                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                  {formatAmount(item.value)}
+                </span>
               </span>
             </button>
           );
