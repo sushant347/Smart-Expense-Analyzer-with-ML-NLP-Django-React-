@@ -1,6 +1,9 @@
 Django>=4.2,<5.0
 djangorestframework
 psycopg2-binary
+dj-database-url
+gunicorn
+whitenoise
 djangorestframework-simplejwt
 django-cors-headers
 scikit-learn

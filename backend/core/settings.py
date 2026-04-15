@@ -15,6 +15,8 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,6 +31,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-local-secret-key-change-before-
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
+
+render_external_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_external_hostname)
 
 
 def _env_bool(name, default=False):
@@ -58,6 +64,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,6 +99,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 USE_SQLITE = _env_bool('DJANGO_USE_SQLITE', DEBUG)
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 if USE_SQLITE:
     DATABASES = {
@@ -99,6 +107,14 @@ if USE_SQLITE:
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
+    }
+elif DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
     }
 else:
     DATABASES = {
@@ -148,6 +164,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -167,6 +185,14 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https?://localhost:\d+$',
     r'^https?://127\.0\.0\.1:\d+$',
+    r'^https://.*\.vercel\.app$',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in os.getenv(
+        'DJANGO_CSRF_TRUSTED_ORIGINS',
+        'https://*.vercel.app'
+    ).split(',') if origin.strip()
 ]
 
 MEDIA_URL = '/media/'
