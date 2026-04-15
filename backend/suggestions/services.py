@@ -9,6 +9,77 @@ from transactions.models import Transaction
 
 NEEDS_CATEGORIES = {'Rent', 'Health', 'Education', 'Transport', 'Transfer'}
 WANTS_CATEGORIES = {'Shopping', 'Entertainment', 'Food'}
+NOTIFICATION_PRIORITY = {'danger': 0, 'warning': 1, 'info': 2}
+
+
+def _normalize_category_goals(raw_goals: object) -> dict[str, float]:
+    if not isinstance(raw_goals, dict):
+        return {}
+
+    normalized: dict[str, float] = {}
+    for raw_category, raw_goal in raw_goals.items():
+        category = str(raw_category).strip()
+        if not category:
+            continue
+
+        try:
+            goal_value = float(raw_goal)
+        except (TypeError, ValueError):
+            continue
+
+        if goal_value < 0:
+            continue
+
+        normalized[category] = round(goal_value, 2)
+
+    return normalized
+
+
+def _build_category_goal_progress(spend_lookup: dict[str, float], category_goals: dict[str, float]):
+    progress_rows = []
+    notifications = []
+
+    for category, goal in sorted(category_goals.items()):
+        actual = float(spend_lookup.get(category, 0.0))
+        utilization_pct = round((actual / goal) * 100, 2) if goal > 0 else 0.0
+        remaining = round(goal - actual, 2)
+        status = 'on_track'
+
+        if goal <= 0:
+            status = 'not_set'
+        elif actual > goal:
+            status = 'exceeded'
+            notifications.append(
+                {
+                    'type': 'danger',
+                    'title': f'{category} goal exceeded',
+                    'message': f'You overspent {category} by NPR {actual - goal:,.0f} this month.',
+                }
+            )
+        elif actual >= goal * 0.9:
+            status = 'reached'
+            notifications.append(
+                {
+                    'type': 'warning',
+                    'title': f'{category} goal reached',
+                    'message': f'{category} has reached {utilization_pct:.0f}% of its NPR {goal:,.0f} goal.',
+                }
+            )
+        elif actual >= goal * 0.75:
+            status = 'approaching'
+
+        progress_rows.append(
+            {
+                'category': category,
+                'goal': round(goal, 2),
+                'actual': round(actual, 2),
+                'remaining': round(remaining, 2),
+                'utilization_pct': utilization_pct,
+                'status': status,
+            }
+        )
+
+    return progress_rows, notifications
 
 
 def current_month_bounds() -> tuple[date, date]:
@@ -31,6 +102,10 @@ def build_suggestions(user) -> dict:
     spend_by_category = [
         {'category': row['category'], 'total': float(row['total'])} for row in spend_by_category_qs
     ]
+    spend_lookup = {row['category']: row['total'] for row in spend_by_category}
+
+    category_goals = _normalize_category_goals(getattr(user, 'category_savings_goals', {}))
+    category_goal_progress, goal_notifications = _build_category_goal_progress(spend_lookup, category_goals)
 
     needs_total = sum(row['total'] for row in spend_by_category if row['category'] in NEEDS_CATEGORIES)
     wants_total = sum(row['total'] for row in spend_by_category if row['category'] in WANTS_CATEGORIES)
@@ -68,6 +143,39 @@ def build_suggestions(user) -> dict:
             }
         )
 
+    notifications = list(goal_notifications)
+
+    savings_goal_value = float(user.savings_goal or 0)
+    if savings_goal_value > 0 and savings_amount >= savings_goal_value:
+        notifications.append(
+            {
+                'type': 'info',
+                'title': 'Savings goal reached',
+                'message': f'Great progress: your monthly savings of NPR {savings_amount:,.0f} reached your NPR {savings_goal_value:,.0f} goal.',
+            }
+        )
+
+    if current_income > 0:
+        spend_ratio = (current_expenses / current_income) * 100
+        if current_expenses > current_income:
+            notifications.append(
+                {
+                    'type': 'danger',
+                    'title': 'High expense alert',
+                    'message': f'Expenses are {spend_ratio:.1f}% of income this month. You are overspending by NPR {current_expenses - current_income:,.0f}.',
+                }
+            )
+        elif spend_ratio >= 85:
+            notifications.append(
+                {
+                    'type': 'warning',
+                    'title': 'High expense alert',
+                    'message': f'Expenses are already {spend_ratio:.1f}% of income this month. Consider cutting variable spend.',
+                }
+            )
+
+    notifications.sort(key=lambda row: NOTIFICATION_PRIORITY.get(row.get('type', 'info'), 99))
+
     non_essential_ratio = round((wants_total / current_expenses) * 100, 2) if current_expenses > 0 else 0.0
 
     return {
@@ -86,6 +194,9 @@ def build_suggestions(user) -> dict:
         'savings_goal': round(float(user.savings_goal or 0), 2),
         'non_essential_ratio': non_essential_ratio,
         'spend_by_category': spend_by_category,
+        'category_savings_goals': category_goals,
+        'category_goal_progress': category_goal_progress,
+        'notifications': notifications,
     }
 
 
