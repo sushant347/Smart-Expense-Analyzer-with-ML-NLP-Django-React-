@@ -1,6 +1,5 @@
 import pandas as pd
 import json
-from pathlib import Path
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status
@@ -12,18 +11,13 @@ from .models import ModelTrainingRun, Transaction
 from .pagination import TransactionPagination
 from .parsers import CSVParserError, parse_transactions_frame
 from .serializers import TransactionSerializer, VALID_CATEGORIES
-from .retraining import maybe_run_auto_retraining, run_retraining_for_user
-import sys
+from .retraining import maybe_run_auto_retraining, enqueue_retraining
+from .tasks import categorize_transactions_task
+from core.tasks import dispatch_task
 import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from ml.categorizer import TransactionCategorizer
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
@@ -33,14 +27,14 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         transaction = serializer.save()
 
-        # If caller didn't provide a category, infer one from ML.
+        # If caller didn't provide a category, queue background ML inference.
         if not self.request.data.get('category'):
-            categorizer = TransactionCategorizer(user_id=self.request.user.id)
-            category, confidence = categorizer.predict(transaction.description)
-            transaction.category = category
-            transaction.confidence_score = confidence
-            transaction.is_uncertain = confidence < categorizer.uncertain_threshold
+            transaction.category = transaction.category or 'Other'
+            transaction.confidence_score = 0.0
+            transaction.is_uncertain = True
             transaction.save(update_fields=['category', 'confidence_score', 'is_uncertain'])
+
+            dispatch_task(categorize_transactions_task, self.request.user.id, [transaction.id])
 
     def get_queryset(self):
         # Ensure users only see their own transactions
@@ -90,16 +84,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
         transaction.corrected_at = timezone.now()
         transaction.save(update_fields=['category', 'confidence_score', 'is_uncertain', 'is_manually_corrected', 'corrected_at'])
 
-        auto_run, pending_or_trained, threshold = maybe_run_auto_retraining(request.user)
+        auto_run_triggered, pending_count, threshold = maybe_run_auto_retraining(request.user)
         payload = {"message": f"Successfully updated category to {new_category}."}
 
-        if auto_run:
-            payload['auto_retrained'] = True
-            payload['model_version'] = auto_run.version
-            payload['trained_rows'] = pending_or_trained
+        if auto_run_triggered:
+            payload['auto_retraining_started'] = True
+            payload['message'] += " Background model retraining started."
         else:
-            payload['auto_retrained'] = False
-            payload['pending_corrections'] = pending_or_trained
+            payload['auto_retraining_started'] = False
+            payload['pending_corrections'] = pending_count
             payload['auto_retrain_threshold'] = threshold
 
         return Response(payload)
@@ -109,22 +102,18 @@ class MLRetrainView(APIView):
     throttle_scope = 'retrain'
 
     def post(self, request, *args, **kwargs):
-        run, trained_rows = run_retraining_for_user(
+        task_result = enqueue_retraining(
             user=request.user,
             trigger_source='MANUAL',
             notes='Manual retraining endpoint triggered.',
         )
 
-        if not run:
-            return Response({"message": "No manually corrected transactions found. Retraining skipped."}, status=status.HTTP_200_OK)
-
         return Response(
             {
-                "message": f"Successfully retrained model using {trained_rows} corrected rows.",
-                "model_version": run.version,
-                "trigger_source": run.trigger_source,
+                'message': 'Retraining task queued successfully.',
+                'task_id': getattr(task_result, 'id', None),
             },
-            status=status.HTTP_200_OK,
+            status=status.HTTP_202_ACCEPTED
         )
 
 
@@ -197,22 +186,31 @@ class CSVUploadView(APIView):
                     {"error": "No valid rows found in uploaded CSV."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
-            # Build categorizer for predictions
-            categorizer = TransactionCategorizer(user_id=request.user.id)
 
             for t in transactions_to_create:
-                cat, conf = categorizer.predict(t.description)
-                t.category = cat
-                t.confidence_score = conf
-                t.is_uncertain = conf < categorizer.uncertain_threshold
+                t.category = 'Other'
+                t.confidence_score = 0.0
+                t.is_uncertain = True
 
             # Bulk create to improve insertion speed
-            Transaction.objects.bulk_create(transactions_to_create)
+            created_transactions = Transaction.objects.bulk_create(transactions_to_create)
 
             total_rows = int(len(df.index))
             imported_rows = len(transactions_to_create)
             skipped_rows = max(total_rows - imported_rows, 0)
+
+            created_ids = [txn.id for txn in created_transactions if txn.id]
+            if not created_ids and imported_rows > 0:
+                recent_ids = list(
+                    Transaction.objects.filter(user=request.user)
+                    .order_by('-id')
+                    .values_list('id', flat=True)[:imported_rows]
+                )
+                created_ids = list(reversed(recent_ids))
+
+            task_result = None
+            if created_ids:
+                task_result = dispatch_task(categorize_transactions_task, request.user.id, created_ids)
             
             return Response(
                 {
@@ -221,6 +219,8 @@ class CSVUploadView(APIView):
                     "total_rows": total_rows,
                     "imported_rows": imported_rows,
                     "skipped_rows": skipped_rows,
+                    'categorization_queued': bool(created_ids),
+                    'categorization_task_id': getattr(task_result, 'id', None) if task_result else None,
                 },
                 status=status.HTTP_201_CREATED
             )
@@ -290,9 +290,9 @@ class WalletSyncView(APIView):
         if not records:
             return Response({'message': f'No transactions returned from {provider}.', 'imported': 0, 'provider': provider})
 
-        categorizer = TransactionCategorizer(user_id=request.user.id)
         imported = 0
         skipped = 0
+        created_ids = []
 
         for row in records:
             date_value = parse_date(str(row.get('date', '')).strip())
@@ -326,19 +326,23 @@ class WalletSyncView(APIView):
                 skipped += 1
                 continue
 
-            category, confidence = categorizer.predict(description)
-            Transaction.objects.create(
+            transaction = Transaction.objects.create(
                 user=request.user,
                 date=date_value,
                 description=description,
                 amount=amount,
                 transaction_type=transaction_type,
                 source=f'API_{provider}',
-                category=category,
-                confidence_score=confidence,
-                is_uncertain=confidence < categorizer.uncertain_threshold,
+                category='Other',
+                confidence_score=0.0,
+                is_uncertain=True,
             )
+            created_ids.append(transaction.id)
             imported += 1
+
+        task_result = None
+        if created_ids:
+            task_result = dispatch_task(categorize_transactions_task, request.user.id, created_ids)
 
         return Response(
             {
@@ -346,5 +350,7 @@ class WalletSyncView(APIView):
                 'imported': imported,
                 'skipped': skipped,
                 'saved': save_records,
+                'categorization_queued': bool(created_ids),
+                'categorization_task_id': getattr(task_result, 'id', None) if task_result else None,
             }
         )
