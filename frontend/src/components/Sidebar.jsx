@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Upload,
   TrendingUp,
+  Activity,
   Settings,
   LogOut,
   Lightbulb,
@@ -12,14 +13,31 @@ import {
   Sun,
   X,
 } from 'lucide-react';
+import kharchiLogo from './image/Kharchi.png';
 
-const nav = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/transactions', icon: ArrowUpDown, label: 'Transactions' },
-  { to: '/upload', icon: Upload, label: 'Import' },
-  { to: '/predictions', icon: TrendingUp, label: 'Predictions' },
-  { to: '/suggestions', icon: Lightbulb, label: 'Suggestions' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const navGroups = [
+  {
+    title: 'Data',
+    items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/transactions', icon: ArrowUpDown, label: 'Transactions' },
+      { to: '/analytics', icon: Activity, label: 'User Analytics' },
+      { to: '/upload', icon: Upload, label: 'Import' },
+    ],
+  },
+  {
+    title: 'Insights',
+    items: [
+      { to: '/predictions', icon: TrendingUp, label: 'Predictions' },
+      { to: '/suggestions', icon: Lightbulb, label: 'Suggestions' },
+    ],
+  },
+  {
+    title: 'Settings',
+    items: [
+      { to: '/settings', icon: Settings, label: 'Settings' },
+    ],
+  },
 ];
 
 export default function Sidebar({ isOpen, onClose, theme, onToggleTheme }) {
@@ -53,12 +71,12 @@ export default function Sidebar({ isOpen, onClose, theme, onToggleTheme }) {
           style={{ borderBottom: '1px solid var(--sidebar-border)' }}
         >
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg"
-              style={{ background: 'linear-gradient(135deg, #16a34a 0%, #f59e0b 100%)', color: '#fff' }}
-            >
-              <span className="text-xs font-bold">K</span>
-            </div>
+            <img
+              src={kharchiLogo}
+              alt="Kharchi logo"
+              className="h-8 w-8 rounded-lg object-cover"
+              style={{ border: '1px solid rgba(255,255,255,0.2)' }}
+            />
             <div>
               <p className="text-sm font-bold text-white leading-none">Kharchi</p>
               <p className="text-[10px] mt-0.5" style={{ color: 'var(--sidebar-text-muted)' }}>Personal Finance</p>
@@ -91,53 +109,62 @@ export default function Sidebar({ isOpen, onClose, theme, onToggleTheme }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          <p
-            className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest"
-            style={{ color: 'var(--sidebar-text-muted)' }}
-          >
-            Navigation
-          </p>
-          {nav.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'sidebar-active-item text-white'
-                      : 'sidebar-inactive-item'
-                  }`
-                }
-                style={({ isActive }) => ({
-                  background: isActive ? 'var(--sidebar-active)' : 'transparent',
-                  color: isActive ? '#fff' : 'var(--sidebar-text)',
-                })}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {navGroups.map((group, groupIndex) => (
+            <div key={group.title} className={groupIndex > 0 ? 'mt-3' : ''}>
+              {groupIndex > 0 && (
+                <div className="mx-2 mb-3" style={{ borderTop: '1px solid var(--sidebar-border)' }} />
+              )}
+              <p
+                className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest"
+                style={{ color: 'var(--sidebar-text-muted)' }}
               >
-                {({ isActive }) => (
-                  <>
-                    <Icon
-                      size={16}
-                      style={{
-                        color: isActive ? 'var(--accent)' : 'var(--sidebar-text-muted)',
-                        transition: 'color 150ms',
-                      }}
-                    />
-                    {item.label}
-                    {isActive && (
-                      <span
-                        className="ml-auto h-1.5 w-1.5 rounded-full"
-                        style={{ background: 'var(--accent)' }}
-                      />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+                {group.title}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'sidebar-active-item text-white'
+                            : 'sidebar-inactive-item'
+                        }`
+                      }
+                      style={({ isActive }) => ({
+                        background: isActive ? 'var(--sidebar-active)' : 'transparent',
+                        color: isActive ? '#fff' : 'var(--sidebar-text)',
+                      })}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            size={16}
+                            style={{
+                              color: isActive ? 'var(--accent)' : 'var(--sidebar-text-muted)',
+                              transition: 'color 150ms',
+                            }}
+                          />
+                          {item.label}
+                          {isActive && (
+                            <span
+                              className="ml-auto h-1.5 w-1.5 rounded-full"
+                              style={{ background: 'var(--accent)' }}
+                            />
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Sign out */}

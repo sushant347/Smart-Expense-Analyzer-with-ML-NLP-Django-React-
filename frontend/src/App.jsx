@@ -8,8 +8,10 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Upload from './pages/Upload';
 import Predictions from './pages/Predictions';
+import UserAnalytics from './pages/UserAnalytics';
 import Settings from './pages/Settings';
 import Suggestions from './pages/Suggestions';
+import kharchiLogo from './components/image/Kharchi.png';
 import './App.css';
 
 const isAuthenticated = () => !!localStorage.getItem('access_token');
@@ -56,9 +58,17 @@ function ProtectedLayout() {
           >
             <Menu size={18} />
           </button>
-          <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-            Kharchi
-          </span>
+          <div className="flex items-center gap-2">
+            <img
+              src={kharchiLogo}
+              alt="Kharchi logo"
+              className="h-6 w-6 rounded-md object-cover"
+              style={{ border: '1px solid var(--stroke-soft)' }}
+            />
+            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              Kharchi
+            </span>
+          </div>
           <button
             onClick={toggleTheme}
             className="rounded-lg p-2 transition"
@@ -86,6 +96,7 @@ export default function App() {
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/analytics" element={<UserAnalytics />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/predictions" element={<Predictions />} />
           <Route path="/suggestions" element={<Suggestions />} />
