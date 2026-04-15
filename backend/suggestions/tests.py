@@ -20,7 +20,8 @@ class SuggestionsAPITests(APITestCase):
 			{'username': 'suggest_user', 'password': 'StrongPass123!'},
 			format='json',
 		)
-		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+		token_payload = login.data.get('data', login.data)
+		self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_payload['access']}")
 
 		Transaction.objects.bulk_create(
 			[
@@ -57,9 +58,10 @@ class SuggestionsAPITests(APITestCase):
 	def test_suggestions_payload_contains_budget_and_tips(self):
 		response = self.client.get(reverse('suggestions-list'))
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
-		self.assertIn('budget_actual', response.data)
-		self.assertIn('budget_recommended', response.data)
-		self.assertIn('tips', response.data)
+		payload = response.data.get('data', response.data)
+		self.assertIn('budget_actual', payload)
+		self.assertIn('budget_recommended', payload)
+		self.assertIn('tips', payload)
 
 	def test_simulation_endpoint_returns_save_projection(self):
 		response = self.client.post(
@@ -68,5 +70,6 @@ class SuggestionsAPITests(APITestCase):
 			format='json',
 		)
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
-		self.assertEqual(response.data['category'], 'Shopping')
-		self.assertGreater(response.data['monthly_extra_saving'], 0)
+		payload = response.data.get('data', response.data)
+		self.assertEqual(payload['category'], 'Shopping')
+		self.assertGreater(payload['monthly_extra_saving'], 0)
