@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
-import { Tag } from 'lucide-react';
+import { Tag, Filter, RotateCcw, Search, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { TablePanelSkeleton } from '../components/ui/SkeletonBlocks';
 
 const CATEGORIES = ['Food', 'Rent', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education', 'Transfer', 'Other'];
 const PAGE_SIZE = 12;
@@ -9,27 +10,45 @@ const DEFAULT_FILTERS = {
   search: '',
   category: '',
   transaction_type: '',
-  start_date: '',
-  end_date: '',
   ordering: '-date',
+};
+
+// Category color map
+const CATEGORY_COLORS = {
+  Food:          { bg: '#dcfce7', text: '#15803d' },
+  Rent:          { bg: '#fee2e2', text: '#b91c1c' },
+  Transport:     { bg: '#fef3c7', text: '#92400e' },
+  Shopping:      { bg: '#ede9fe', text: '#6d28d9' },
+  Entertainment: { bg: '#fce7f3', text: '#9d174d' },
+  Health:        { bg: '#dbeafe', text: '#1d4ed8' },
+  Education:     { bg: '#e0f2fe', text: '#0369a1' },
+  Transfer:      { bg: '#f3f4f6', text: '#374151' },
+  Other:         { bg: '#f3f4f6', text: '#374151' },
 };
 
 function normalizePaginatedPayload(payload) {
   if (Array.isArray(payload)) {
-    return {
-      count: payload.length,
-      next: null,
-      previous: null,
-      results: payload,
-    };
+    return { count: payload.length, next: null, previous: null, results: payload };
   }
-
   return {
     count: payload?.count ?? 0,
     next: payload?.next ?? null,
     previous: payload?.previous ?? null,
     results: payload?.results ?? [],
   };
+}
+
+function CategoryBadge({ category, corrected }) {
+  const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.Other;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold"
+      style={{ background: colors.bg, color: colors.text }}
+    >
+      {category}
+      {corrected && <span className="text-[10px]">✓</span>}
+    </span>
+  );
 }
 
 export default function Transactions() {
@@ -47,27 +66,20 @@ export default function Transactions() {
 
   const showToast = useCallback((msg) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+    setTimeout(() => setToast(''), 3200);
   }, []);
 
   const fetchTransactions = useCallback(async (targetPage, activeFilters) => {
     setLoading(true);
     try {
-      const params = {
-        page: targetPage,
-        page_size: PAGE_SIZE,
-      };
-
+      const params = { page: targetPage, page_size: PAGE_SIZE };
       if (activeFilters.search.trim()) params.search = activeFilters.search.trim();
       if (activeFilters.category) params.category = activeFilters.category;
       if (activeFilters.transaction_type) params.transaction_type = activeFilters.transaction_type;
-      if (activeFilters.start_date) params.start_date = activeFilters.start_date;
-      if (activeFilters.end_date) params.end_date = activeFilters.end_date;
       if (activeFilters.ordering) params.ordering = activeFilters.ordering;
 
       const res = await api.get('transactions/', { params });
       const payload = normalizePaginatedPayload(res.data);
-
       setTransactions(payload.results);
       setTotalCount(payload.count);
       setHasNext(Boolean(payload.next));
@@ -80,9 +92,7 @@ export default function Transactions() {
     }
   }, [showToast]);
 
-  useEffect(() => {
-    fetchTransactions(page, filters);
-  }, [page, filters, fetchTransactions]);
+  useEffect(() => { fetchTransactions(page, filters); }, [page, filters, fetchTransactions]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(totalCount / PAGE_SIZE)), [totalCount]);
 
@@ -90,9 +100,9 @@ export default function Transactions() {
     try {
       const response = await api.post(`transactions/${id}/correct_category/`, { category: newCategory });
       if (response.data?.auto_retrained) {
-        showToast(`Category updated. Auto retraining triggered (v${response.data.model_version}).`);
+        showToast(`✓ Category updated · Model retrained (v${response.data.model_version})`);
       } else {
-        showToast(`Category updated to ${newCategory}`);
+        showToast(`✓ Category changed to ${newCategory}`);
       }
       setEditId(null);
       fetchTransactions(page, filters);
@@ -112,151 +122,175 @@ export default function Transactions() {
     setFilters(DEFAULT_FILTERS);
   };
 
-  return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      {toast && (
-        <div className="fixed right-6 top-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-lg dark:bg-slate-100 dark:text-slate-900">{toast}</div>
-      )}
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Transactions</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Review records, apply filters, and correct category labels.</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-          {totalCount} total
-        </div>
-      </header>
+  const hasActiveFilters = Object.entries(draftFilters).some(
+    ([k, v]) => k !== 'ordering' && v !== DEFAULT_FILTERS[k]
+  );
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <input
-            type="text"
-            value={draftFilters.search}
-            onChange={(e) => setDraftFilters((prev) => ({ ...prev, search: e.target.value }))}
-            placeholder="Search description"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-          />
+  return (
+    <div className="w-full space-y-3 sm:space-y-4">
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed right-5 top-5 z-50 rounded-xl px-5 py-3 text-sm font-medium shadow-lg"
+          style={{
+            background: 'var(--sidebar-bg)',
+            color: '#f9fafb',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
+      {/* Page header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="page-title">Transactions</h1>
+          <p className="page-subtitle hidden sm:block">Browse, filter, and correct transaction categories.</p>
+        </div>
+        <div
+          className="rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold flex-shrink-0"
+          style={{ background: 'var(--surface-1)', border: '1px solid var(--stroke-soft)', color: 'var(--text-secondary)' }}
+        >
+          {totalCount} records
+        </div>
+      </div>
+
+      {/* Filter panel */}
+      <div className="card p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Filter size={13} style={{ color: 'var(--text-muted)' }} />
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Filters</span>
+        </div>
+        {/* Row 1: search + category + type */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              value={draftFilters.search}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, search: e.target.value }))}
+              placeholder="Search description…"
+              className="input-surface pl-8 text-sm py-2"
+            />
+          </div>
           <select
             value={draftFilters.category}
             onChange={(e) => setDraftFilters((prev) => ({ ...prev, category: e.target.value }))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
+            className="input-surface text-sm py-2"
           >
             <option value="">All categories</option>
-            {CATEGORIES.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <select
             value={draftFilters.transaction_type}
             onChange={(e) => setDraftFilters((prev) => ({ ...prev, transaction_type: e.target.value }))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
+            className="input-surface text-sm py-2"
           >
             <option value="">All types</option>
             <option value="DEBIT">Debit</option>
             <option value="CREDIT">Credit</option>
           </select>
-          <input
-            type="date"
-            value={draftFilters.start_date}
-            onChange={(e) => setDraftFilters((prev) => ({ ...prev, start_date: e.target.value }))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-          />
-          <input
-            type="date"
-            value={draftFilters.end_date}
-            onChange={(e) => setDraftFilters((prev) => ({ ...prev, end_date: e.target.value }))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-          />
-          <select
-            value={draftFilters.ordering}
-            onChange={(e) => setDraftFilters((prev) => ({ ...prev, ordering: e.target.value }))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-          >
-            <option value="-date">Newest first</option>
-            <option value="date">Oldest first</option>
-            <option value="-amount">Highest amount</option>
-            <option value="amount">Lowest amount</option>
-          </select>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <button onClick={applyFilters} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700">
-            Apply filters
+        <div className="mt-2.5 flex items-center gap-2">
+          <button onClick={applyFilters} className="btn-primary py-1.5 text-xs gap-1.5">
+            <Filter size={12} /> Apply
           </button>
-          <button onClick={resetFilters} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
-            Reset
+          <button onClick={resetFilters} className="btn-secondary py-1.5 text-xs gap-1.5" disabled={!hasActiveFilters}>
+            <RotateCcw size={12} /> Reset
           </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <ArrowUpDown size={12} style={{ color: 'var(--text-muted)' }} />
+            <select
+              value={draftFilters.ordering}
+              onChange={(e) => {
+                const newDraft = { ...draftFilters, ordering: e.target.value };
+                setDraftFilters(newDraft);
+                setPage(1);
+                setFilters({ ...filters, ordering: e.target.value });
+              }}
+              className="input-surface py-1.5 text-xs"
+              style={{ width: 'auto' }}
+            >
+              <option value="-date">Newest first</option>
+              <option value="date">Oldest first</option>
+              <option value="-amount">Highest</option>
+              <option value="amount">Lowest</option>
+            </select>
+          </div>
         </div>
-      </section>
+      </div>
 
+      {/* Table */}
       {loading ? (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
-          ))}
-        </div>
+        <TablePanelSkeleton rows={7} headerCount={6} />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <table className="min-w-full text-sm">
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+            <table className="data-table min-w-[560px]">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300">
-                  <th className="px-5 py-4 text-left">Date</th>
-                  <th className="px-5 py-4 text-left">Description</th>
-                  <th className="px-5 py-4 text-left">Category</th>
-                  <th className="px-5 py-4 text-left">Confidence</th>
-                  <th className="px-5 py-4 text-right">Amount</th>
-                  <th className="px-5 py-4 text-center">Action</th>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th className="hidden sm:table-cell">Confidence</th>
+                  <th className="text-right">Amount</th>
+                  <th className="text-center">Edit</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((t) => (
                   <React.Fragment key={t.id}>
-                    <tr className="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60">
-                      <td className="px-5 py-3 text-slate-700 dark:text-slate-200">{t.date}</td>
-                      <td className="max-w-xs truncate px-5 py-3 text-slate-700 dark:text-slate-200">{t.description}</td>
-                      <td className="px-5 py-3">
-                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${t.is_manually_corrected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
-                          {t.category}
-                          {t.is_manually_corrected && ' ✓'}
-                        </span>
+                    <tr>
+                      <td className="whitespace-nowrap">
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t.date}</span>
                       </td>
-                      <td className="px-5 py-3">
-                        <span className={`text-xs font-medium ${t.is_uncertain ? 'text-amber-600 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
-                          {(t.confidence_score * 100).toFixed(0)}%
-                          {t.is_uncertain && ' uncertain'}
-                        </span>
+                      <td className="max-w-[160px] sm:max-w-[240px]">
+                        <p className="truncate font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{t.description}</p>
                       </td>
-                      <td className={`px-5 py-3 text-right font-semibold ${t.transaction_type === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-100'}`}>
-                        {t.transaction_type === 'CREDIT' ? '+' : '-'}NPR {parseFloat(t.amount).toLocaleString()}
+                      <td className="whitespace-nowrap">
+                        <CategoryBadge category={t.category} corrected={t.is_manually_corrected} />
                       </td>
-                      <td className="px-5 py-3 text-center">
-                        <button
-                          onClick={() => {
-                            setEditId(editId === t.id ? null : t.id);
-                            setNewCategory(t.category);
-                          }}
-                          className="text-slate-500 transition-colors hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-300"
+                      <td className="hidden sm:table-cell whitespace-nowrap">
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: t.is_uncertain ? 'var(--amber)' : 'var(--text-muted)' }}
                         >
-                          <Tag size={16} />
+                          {(t.confidence_score * 100).toFixed(0)}%
+                          {t.is_uncertain && <span className="ml-1 text-[10px]">uncertain</span>}
+                        </span>
+                      </td>
+                      <td className="text-right whitespace-nowrap">
+                        {/* DEBIT = red, CREDIT = green */}
+                        <span
+                          className="font-bold text-sm"
+                          style={{ color: t.transaction_type === 'CREDIT' ? 'var(--accent)' : 'var(--danger)' }}
+                        >
+                          {t.transaction_type === 'CREDIT' ? '+' : '−'}NPR {parseFloat(t.amount).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="text-center">
+                        <button
+                          onClick={() => { setEditId(editId === t.id ? null : t.id); setNewCategory(t.category); }}
+                          className="rounded-lg p-1.5 transition"
+                          style={{ color: editId === t.id ? 'var(--accent)' : 'var(--text-muted)', background: editId === t.id ? 'var(--accent-subtle)' : 'transparent' }}
+                          title="Edit category"
+                        >
+                          <Tag size={15} />
                         </button>
                       </td>
                     </tr>
                     {editId === t.id && (
-                      <tr className="bg-slate-50 dark:bg-slate-800/80">
-                        <td colSpan={6} className="px-5 py-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-sm text-slate-600 dark:text-slate-300">Change category to:</span>
-                            <select
-                              value={newCategory}
-                              onChange={(e) => setNewCategory(e.target.value)}
-                              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40"
-                            >
-                              {CATEGORIES.map((category) => <option key={category}>{category}</option>)}
+                      <tr style={{ background: 'var(--surface-hover)' }}>
+                        <td colSpan={6} className="px-3 py-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Change to:</span>
+                            <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="input-surface py-1.5 text-xs" style={{ width: 'auto' }}>
+                              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                             </select>
-                            <button onClick={() => correctCategory(t.id)} className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700">
-                              Save
-                            </button>
-                            <button onClick={() => setEditId(null)} className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">Cancel</button>
+                            <button onClick={() => correctCategory(t.id)} className="btn-primary py-1.5 text-xs px-3">Save</button>
+                            <button onClick={() => setEditId(null)} className="text-xs hover:underline" style={{ color: 'var(--text-muted)' }}>Cancel</button>
                           </div>
                         </td>
                       </tr>
@@ -265,7 +299,7 @@ export default function Transactions() {
                 ))}
                 {transactions.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-slate-500 dark:text-slate-300">
+                    <td colSpan={6} className="py-14 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
                       No transactions found. Upload a CSV or adjust filters.
                     </td>
                   </tr>
@@ -274,24 +308,18 @@ export default function Transactions() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm dark:border-slate-700">
-            <div className="text-slate-600 dark:text-slate-300">
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={!hasPrevious || page === 1}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-              >
-                Previous
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-3 py-3" style={{ borderTop: '1px solid var(--stroke-soft)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>{page}</strong>/{totalPages}
+              <span className="ml-1.5 hidden sm:inline">({totalCount} total)</span>
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!hasPrevious || page === 1} className="btn-secondary py-1.5 px-2.5 gap-1" style={{ fontSize: '12px' }}>
+                <ChevronLeft size={13} /><span className="hidden sm:inline">Prev</span>
               </button>
-              <button
-                onClick={() => setPage((prev) => prev + 1)}
-                disabled={!hasNext || page >= totalPages}
-                className="rounded-lg bg-sky-600 px-3 py-1.5 font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
+              <button onClick={() => setPage((p) => p + 1)} disabled={!hasNext || page >= totalPages} className="btn-primary py-1.5 px-2.5 gap-1" style={{ fontSize: '12px' }}>
+                <span className="hidden sm:inline">Next</span><ChevronRight size={13} />
               </button>
             </div>
           </div>

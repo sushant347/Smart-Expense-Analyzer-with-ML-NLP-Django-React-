@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
-import { Upload, FileText, Check, AlertCircle } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 
 const CATEGORIES = ['Food', 'Rent', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education', 'Transfer', 'Other'];
 
@@ -8,9 +8,9 @@ export default function UploadPage() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
 
-  // Manual entry form state
   const [manual, setManual] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -20,20 +20,33 @@ export default function UploadPage() {
     source: 'MANUAL',
   });
   const [manualResult, setManualResult] = useState('');
+  const [manualError, setManualError] = useState('');
+  const [manualLoading, setManualLoading] = useState(false);
+
+  const handleFileSelect = (selected) => {
+    if (selected && selected.name.endsWith('.csv')) {
+      setFile(selected);
+      setResult(null);
+      setUploadError('');
+    } else if (selected) {
+      setUploadError('Please select a valid .csv file.');
+    }
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) return;
     setUploading(true);
     setResult(null);
-    setError('');
+    setUploadError('');
     const formData = new FormData();
     formData.append('file', file);
     try {
       const res = await api.post('transactions/upload/', formData);
       setResult(res.data.message);
+      setFile(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed.');
+      setUploadError(err.response?.data?.error || 'Upload failed. Please check your file format.');
     } finally {
       setUploading(false);
     }
@@ -41,88 +54,213 @@ export default function UploadPage() {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
+    setManualLoading(true);
+    setManualResult('');
+    setManualError('');
     try {
       await api.post('transactions/', manual);
       setManualResult('Transaction added successfully!');
-      setManual({ date: new Date().toISOString().split('T')[0], description: '', amount: '', transaction_type: 'DEBIT', category: 'Other', source: 'MANUAL' });
-      setTimeout(() => setManualResult(''), 3000);
+      setManual({
+        date: new Date().toISOString().split('T')[0],
+        description: '', amount: '',
+        transaction_type: 'DEBIT', category: 'Other', source: 'MANUAL',
+      });
+      setTimeout(() => setManualResult(''), 4000);
     } catch {
-      setManualResult('Failed to add transaction.');
+      setManualError('Failed to add transaction. Please check your inputs.');
+    } finally {
+      setManualLoading(false);
     }
   };
 
   return (
-    <div className="h-full space-y-6 overflow-y-auto pr-1">
-      <header>
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Import Transactions</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Upload CSV statements or add entries manually.</p>
-      </header>
+    <div className="w-full space-y-5">
+      <div>
+        <h1 className="page-title">Import Transactions</h1>
+        <p className="page-subtitle">Upload a CSV statement or add entries one by one.</p>
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100"><Upload size={20} /> CSV Upload</h2>
-        <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">Supported formats: eSewa, Khalti, and standard bank statements.</p>
-        
-        <form onSubmit={handleUpload}>
-          <label className={`block cursor-pointer rounded-xl border-2 border-dashed p-10 text-center transition-colors ${file ? 'border-sky-400 bg-sky-50 dark:border-sky-500 dark:bg-sky-900/20' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}>
-            <input type="file" accept=".csv" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
-            <FileText className="mx-auto mb-3 text-slate-500 dark:text-slate-300" size={40} />
-            {file ? (
-              <p className="font-medium text-sky-700 dark:text-sky-300">{file.name}</p>
-            ) : (
-              <p className="text-slate-600 dark:text-slate-300">Click to select a CSV file</p>
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
+        {/* CSV Upload */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <UploadCloud size={18} style={{ color: 'var(--accent)' }} />
+            <h2 className="section-title">CSV Upload</h2>
+          </div>
+          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+            Supported: eSewa, Khalti, and standard bank statement exports.
+          </p>
+
+          <form onSubmit={handleUpload}>
+            {/* Drop zone */}
+            <label
+              className="block rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-colors"
+              style={{
+                borderColor: dragOver
+                  ? 'var(--accent)'
+                  : file
+                    ? 'var(--accent)'
+                    : 'var(--stroke-medium)',
+                background: dragOver || file
+                  ? 'var(--accent-subtle)'
+                  : 'var(--surface-2)',
+              }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                handleFileSelect(e.dataTransfer.files[0]);
+              }}
+            >
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={(e) => handleFileSelect(e.target.files[0])}
+              />
+              <FileSpreadsheet
+                size={40}
+                className="mx-auto mb-3"
+                style={{ color: file ? 'var(--accent)' : 'var(--text-muted)' }}
+              />
+              {file ? (
+                <>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--accent)' }}>{file.name}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    {(file.size / 1024).toFixed(1)} KB · Click to change
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    Drag & drop your CSV here
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>or click to browse files</p>
+                </>
+              )}
+            </label>
+
+            {result && (
+              <div className="alert alert-info mt-4">
+                <CheckCircle2 size={16} className="flex-shrink-0" />
+                {result}
+              </div>
             )}
-          </label>
-          {result && <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"><Check size={18}/>{result}</div>}
-          {error && <div className="mt-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300"><AlertCircle size={18}/>{error}</div>}
-          <button type="submit" disabled={!file || uploading}
-            className="mt-5 rounded-lg bg-sky-600 px-6 py-3 font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50">
-            {uploading ? 'Uploading...' : 'Upload & Analyze'}
-          </button>
-        </form>
-      </div>
+            {uploadError && (
+              <div className="alert alert-danger mt-4">
+                <AlertCircle size={16} className="flex-shrink-0" />
+                {uploadError}
+              </div>
+            )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">Manual Entry</h2>
-        {manualResult && <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">{manualResult}</div>}
-        <form onSubmit={handleManualSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="mb-1 block text-sm text-slate-700 dark:text-slate-200">Date</label>
-            <input type="date" value={manual.date} onChange={e => setManual({...manual, date: e.target.value})}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40" required />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-slate-700 dark:text-slate-200">Amount (NPR)</label>
-            <input type="number" step="0.01" value={manual.amount} onChange={e => setManual({...manual, amount: e.target.value})}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40" required />
-          </div>
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-sm text-slate-700 dark:text-slate-200">Description</label>
-            <input type="text" value={manual.description} onChange={e => setManual({...manual, description: e.target.value})}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40" required />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-slate-700 dark:text-slate-200">Type</label>
-            <select value={manual.transaction_type} onChange={e => setManual({...manual, transaction_type: e.target.value})}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40">
-              <option value="DEBIT">Debit (Expense)</option>
-              <option value="CREDIT">Credit (Income)</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-slate-700 dark:text-slate-200">Category</label>
-            <select value={manual.category} onChange={e => setManual({...manual, category: e.target.value})}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-900/40">
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <button type="submit" className="rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200">
-              Add Entry
+            <button
+              type="submit"
+              disabled={!file || uploading}
+              className="btn-primary mt-5 gap-2 w-full py-3"
+            >
+              <UploadCloud size={16} />
+              {uploading ? 'Uploading & analyzing…' : 'Upload & Analyze'}
             </button>
+          </form>
+        </div>
+
+        {/* Manual Entry */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Plus size={18} style={{ color: 'var(--accent)' }} />
+            <h2 className="section-title">Manual Entry</h2>
           </div>
-        </form>
-      </div>
+          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+            Add a single transaction directly.
+          </p>
+
+          {manualResult && (
+            <div className="alert alert-info mb-4">
+              <CheckCircle2 size={16} className="flex-shrink-0" />
+              {manualResult}
+            </div>
+          )}
+          {manualError && (
+            <div className="alert alert-danger mb-4">
+              <AlertCircle size={16} className="flex-shrink-0" />
+              {manualError}
+            </div>
+          )}
+
+          <form onSubmit={handleManualSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Date</label>
+              <input
+                type="date"
+                value={manual.date}
+                onChange={(e) => setManual({ ...manual, date: e.target.value })}
+                className="input-surface"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Amount (NPR)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={manual.amount}
+                onChange={(e) => setManual({ ...manual, amount: e.target.value })}
+                className="input-surface"
+                placeholder="0.00"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Description</label>
+              <input
+                type="text"
+                value={manual.description}
+                onChange={(e) => setManual({ ...manual, description: e.target.value })}
+                className="input-surface"
+                placeholder="e.g. Grocery mart purchase"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Type</label>
+              <select
+                value={manual.transaction_type}
+                onChange={(e) => setManual({ ...manual, transaction_type: e.target.value })}
+                className="input-surface"
+              >
+                <option value="DEBIT">Debit (Expense)</option>
+                <option value="CREDIT">Credit (Income)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Category</label>
+              <select
+                value={manual.category}
+                onChange={(e) => setManual({ ...manual, category: e.target.value })}
+                className="input-surface"
+              >
+                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={manualLoading}
+                className="btn-primary gap-2 w-full py-3"
+              >
+                <Plus size={16} />
+                {manualLoading ? 'Adding…' : 'Add Transaction'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
