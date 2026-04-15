@@ -19,4 +19,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        user = self.request.user
+        if user.currency != 'NPR':
+            user.currency = 'NPR'
+            user.save(update_fields=['currency'])
+        return user
